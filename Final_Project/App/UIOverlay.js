@@ -1,48 +1,11 @@
 /**
- * 🔥 UI OVERLAY COMPONENT - SUPER SIMPLE UNIFIED SYSTEM
+ * 🔥 UI OVERLAY COMPONENT - USING CLEAN DESIGN SYSTEM
  * 
- * ALL COMPONENTS WORK THE SAME WAY - JUST DIFFERENT START/END POSITIONS!
- * 
- * SUPER EASY CUSTOMIZATION - JUST CHANGE THESE VALUES:
- * 
- * scrollTrigger: 0.2     // When component starts moving (0-1, where 1 = 100% scroll)
- * scrollEnd: 0.5        // When component finishes moving (0-1)
- * startPosition: -20    // Where component starts (-20 = above screen, 80 = bottom)
- * endPosition: 120      // Where component ends (120 = below screen, 80 = bottom)
- * 
- * POSITION VALUES:
- * - -20 = Above screen (hidden)
- * - 0 = Top of screen
- * - 50 = Middle of screen  
- * - 80 = Bottom of screen
- * - 120 = Below screen (hidden)
- * 
- * EXAMPLES:
- * - startPosition: 80, endPosition: 120 = Start at bottom, move down and fade out
- * - startPosition: -20, endPosition: 120 = Start above, move through screen, fade out
- * - startPosition: -20, endPosition: 80 = Start above, move to bottom and stay
- * 
- * HOW TO CUSTOMIZE:
- * 
- * 1. CHANGE TIMING:
- *    - Edit scrollTrigger and scrollEnd values (0-1)
- *    - Bigger range = slower movement
- *    - Smaller range = faster movement
- * 
- * 2. CHANGE MOVEMENT:
- *    - Edit startPosition and endPosition values
- *    - Same logic for all components!
- * 
- * 3. CHANGE TEXT:
- *    - Edit headline and bodyText properties
- * 
- * CURRENT SETUP:
- * - Component 1: Bottom to off-bottom (0-20% scroll) - starts visible, LEFT ALIGNED
- * - Component 2: Above to off-bottom (15-45% scroll) - normal, LEFT ALIGNED  
- * - Component 3: Above to off-bottom (40-70% scroll) - normal, LEFT ALIGNED
- * - Component 4: Above to bottom (65-95% scroll) - stays at end, LEFT ALIGNED
- * - Camera shifted LEFT so character appears more to the RIGHT
+ * Now uses globalTypography from DesignSystem.js for all font sizes!
+ * No more inline font-size values - everything controlled centrally.
  */
+import { globalTypography } from './DesignSystem.js';
+
 export default class UIOverlay {
   constructor(app) {
     this.app = app;
@@ -163,128 +126,53 @@ export default class UIOverlay {
       // Bio Description: Just the text, positioned like component 3
               element.innerHTML = `
           <h2 style="
-            font-size: 2.4rem;
-            font-weight: bold;
-            margin: 0 0 0.9rem 0;
-            letter-spacing: -0.02em;
-            max-width: 600px;
-            line-height: 1.2;
+            font-size: ${globalTypography.h2.fontSize};
+            font-weight: ${globalTypography.h2.fontWeight};
+            line-height: ${globalTypography.h2.lineHeight};
+            margin: 0 0 ${globalTypography.h2.marginBottom} 0;
+            letter-spacing: ${globalTypography.h2.letterSpacing};
+            color: white;
+            max-width: 500px;
           ">
-            I work at the intersection of design, motion, and technology. Right now, I'm exploring Creative Computing through a master's at the University of Arts London. <br/><br/>For me, good design moves, and great design moves you. I love creating ideas that feel alive—ideas that move, flow, and respond. My best work emerges from the sweet spot between calm and movement.
+            I feel a tension. Between a sense of calm and a love of motion. I’m patient and focused, but I also like to act and get things done.
+             <br/><br/>Right now, I'm exploring Creative Computing through a master's at the University of Arts London.
           </h2>
         `;
          } else if (headline === 'Find Your Flow') {
         // Component 2: Title + description + skills list
         element.innerHTML = `
         <h2 style="
-          font-size: ${size};
-          font-weight: bold;
-          margin: 0 0 1.5rem 0;
-          letter-spacing: -0.02em;
-        ">Design that moves. You.</h2>
+          font-size: ${globalTypography.h2.fontSize};
+          font-weight: ${globalTypography.h2.fontWeight};
+          line-height: ${globalTypography.h2.lineHeight};
+          margin: 0 0 ${globalTypography.h2.marginBottom} 0;
+          letter-spacing: ${globalTypography.h2.letterSpacing};
+          max-width: 500px;
+        ">I work at the intersection of design, interaction, and technology.</h2>
         
         <div style="
           display: grid;
           grid-template-columns: repeat(2, 1fr);
           gap: 1rem;
-          width: 460px;
+          width: 500px;
         ">
-          <div style="
-            font-size: 1rem;
-            color: rgba(255, 255, 255, 0.9);
-            padding: 0.5rem 1rem;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 6px;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            backdrop-filter: blur(10px);
-            transition: all 0.3s ease;
-          " onmouseover="this.style.background='rgba(255,255,255,0.15)'; this.style.transform='translateY(-2px)'" onmouseout="this.style.background='rgba(255,255,255,0.1)'; this.style.transform='translateY(0)'">
-            Creative Coding
-          </div>
-          <div style="
-            font-size: 1rem;
-            color: rgba(255, 255, 255, 0.9);
-            padding: 0.5rem 1rem;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 6px;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            backdrop-filter: blur(10px);
-            transition: all 0.3s ease;
-          " onmouseover="this.style.background='rgba(255,255,255,0.15)'; this.style.transform='translateY(-2px)'" onmouseout="this.style.background='rgba(255,255,255,0.1)'; this.style.transform='translateY(0)'">
-            UI/UX Design
-          </div>
-          <div style="
-            font-size: 1rem;
-            color: rgba(255, 255, 255, 0.9);
-            padding: 0.5rem 1rem;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 6px;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            backdrop-filter: blur(10px);
-            transition: all 0.3s ease;
-          " onmouseover="this.style.background='rgba(255,255,255,0.15)'; this.style.transform='translateY(-2px)'" onmouseout="this.style.background='rgba(255,255,255,0.1)'; this.style.transform='translateY(0)'">
-            Three.js/WebGL
-          </div>
-          <div style="
-            font-size: 1rem;
-            color: rgba(255, 255, 255, 0.9);
-            padding: 0.5rem 1rem;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 6px;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            backdrop-filter: blur(10px);
-            transition: all 0.3s ease;
-          " onmouseover="this.style.background='rgba(255,255,255,0.15)'; this.style.transform='translateY(-2px)'" onmouseout="this.style.background='rgba(255,255,255,0.1)'; this.style.transform='translateY(0)'">
-            Motion Design
-          </div>
-          <div style="
-            font-size: 1rem;
-            color: rgba(255, 255, 255, 0.9);
-            padding: 0.5rem 1rem;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 6px;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            backdrop-filter: blur(10px);
-            transition: all 0.3s ease;
-          " onmouseover="this.style.background='rgba(255,255,255,0.15)'; this.style.transform='translateY(-2px)'" onmouseout="this.style.background='rgba(255,255,255,0.1)'; this.style.transform='translateY(0)'">
-            Entrepreneurship
-          </div>
-          <div style="
-            font-size: 1rem;
-            color: rgba(255, 255, 255, 0.9);
-            padding: 0.5rem 1rem;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 6px;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            backdrop-filter: blur(10px);
-            transition: all 0.3s ease;
-          " onmouseover="this.style.background='rgba(255,255,255,0.15)'; this.style.transform='translateY(-2px)'" onmouseout="this.style.background='rgba(255,255,255,0.1)'; this.style.transform='translateY(0)'">
-            Product Strategy
-          </div>
-          <div style="
-            font-size: 1rem;
-            color: rgba(255, 255, 255, 0.9);
-            padding: 0.5rem 1rem;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 6px;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            backdrop-filter: blur(10px);
-            transition: all 0.3s ease;
-          " onmouseover="this.style.background='rgba(255,255,255,0.15)'; this.style.transform='translateY(-2px)'" onmouseout="this.style.background='rgba(255,255,255,0.1)'; this.style.transform='translateY(0)'">
-            React/Next.js
-          </div>
-          <div style="
-            font-size: 1rem;
-            color: rgba(255, 255, 255, 0.9);
-            padding: 0.5rem 1rem;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 6px;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            backdrop-filter: blur(10px);
-            transition: all 0.3s ease;
-          " onmouseover="this.style.background='rgba(255,255,255,0.15)'; this.style.transform='translateY(-2px)'" onmouseout="this.style.background='rgba(255,255,255,0.1)'; this.style.transform='translateY(0)'">
-            Brand Design
-          </div>
+          ${['Creative Coding', 'UI/UX Design', 'Three.js/WebGL', 'Motion Design', 'React/Next.js', 'Brand Design'].map(skill => `
+            <div style="
+              font-size: ${globalTypography.body.fontSize};
+              font-weight: ${globalTypography.body.fontWeight};
+              line-height: ${globalTypography.body.lineHeight};
+              letter-spacing: ${globalTypography.body.letterSpacing};
+              color: rgba(255, 255, 255, 0.9);
+              padding: 0.5rem 1rem;
+              background: rgba(255, 255, 255, 0.1);
+              border-radius: 6px;
+              border: 1px solid rgba(255, 255, 255, 0.2);
+              backdrop-filter: blur(10px);
+              transition: all 0.3s ease;
+            " onmouseover="this.style.background='rgba(255,255,255,0.15)'; this.style.transform='translateY(-2px)'" onmouseout="this.style.background='rgba(255,255,255,0.1)'; this.style.transform='translateY(0)'">
+              ${skill}
+            </div>
+          `).join('')}
         </div>
       `;
     } else {
@@ -292,16 +180,19 @@ export default class UIOverlay {
       element.innerHTML = `
         <div class="case-study-container">
           <h2 style="
-            font-size: ${size};
-            font-weight: bold;
-            margin: 0 0 0.9rem 0;
-            letter-spacing: -0.02em;
+            font-size: ${globalTypography.h2.fontSize};
+            font-weight: ${globalTypography.h2.fontWeight};
+            line-height: ${globalTypography.h2.lineHeight};
+            margin: 0 0 ${globalTypography.h2.marginBottom} 0;
+            letter-spacing: ${globalTypography.h2.letterSpacing};
           ">TENDOR: Climbing App</h2>
           
           <div style="
-            font-size: 1.15rem;
-            line-height: 1.6;
-            max-width: 480px;
+            font-size: ${globalTypography.body.fontSize};
+            font-weight: ${globalTypography.body.fontWeight};
+            line-height: ${globalTypography.body.lineHeight};
+            letter-spacing: ${globalTypography.body.letterSpacing};
+            max-width: 500px;
             margin-bottom: 2rem;
           ">
             A motion-tracking climbing app that shows you beta from top climbers, helps you spot technique mistakes, and projects route solutions directly on the wall
@@ -310,7 +201,9 @@ export default class UIOverlay {
           <a href="#" style="
             color: white;
             text-decoration: none;
-            font-size: 1.2rem;
+            font-size: ${globalTypography.body.fontSize};
+            font-weight: ${globalTypography.body.fontWeight};
+            letter-spacing: ${globalTypography.body.letterSpacing};
             transition: all 0.3s ease;
             display: inline-block;
             pointer-events: auto;
@@ -382,16 +275,18 @@ export default class UIOverlay {
     `;
     element.innerHTML = `
       <!-- Header and Social Buttons -->
-      <h2 style="
+      <h1 style="
         position: fixed;
         top: 5vh;
         left: 5vh;
-        font-size: 4rem;
-        font-weight: bold;
+        font-size: ${globalTypography.h1.fontSize};
+        font-weight: ${globalTypography.h1.fontWeight};
+        line-height: ${globalTypography.h1.lineHeight};
         margin: 0;
-        letter-spacing: -0.04em;
+        letter-spacing: ${globalTypography.h1.letterSpacing};
+        color: white;
         transform: translateY(-20vh);
-      ">Get in Touch</h2>
+      ">Get in Touch</h1>
       
       <div style="
         position: fixed;
@@ -405,7 +300,9 @@ export default class UIOverlay {
         <a href="mailto:your.email@example.com" style="
           color: white;
           text-decoration: none;
-          font-size: 1.2rem;
+          font-size: ${globalTypography.body.fontSize};
+          font-weight: ${globalTypography.body.fontWeight};
+          letter-spacing: ${globalTypography.body.letterSpacing};
           transition: all 0.3s ease;
           display: inline-block;
         " onmouseover="this.style.opacity='0.7'; this.style.transform='translateY(-2px)'" onmouseout="this.style.opacity='1'; this.style.transform='translateY(0)'">
@@ -414,7 +311,9 @@ export default class UIOverlay {
         <a href="https://linkedin.com/in/yourprofile" style="
           color: white;
           text-decoration: none;
-          font-size: 1.2rem;
+          font-size: ${globalTypography.body.fontSize};
+          font-weight: ${globalTypography.body.fontWeight};
+          letter-spacing: ${globalTypography.body.letterSpacing};
           transition: all 0.3s ease;
           display: inline-block;
         " onmouseover="this.style.opacity='0.7'; this.style.transform='translateY(-2px)'" onmouseout="this.style.opacity='1'; this.style.transform='translateY(0)'">
@@ -423,7 +322,9 @@ export default class UIOverlay {
         <a href="https://instagram.com/yourprofile" style="
           color: white;
           text-decoration: none;
-          font-size: 1.2rem;
+          font-size: ${globalTypography.body.fontSize};
+          font-weight: ${globalTypography.body.fontWeight};
+          letter-spacing: ${globalTypography.body.letterSpacing};
           transition: all 0.3s ease;
           display: inline-block;
         " onmouseover="this.style.opacity='0.7'; this.style.transform='translateY(-2px)'" onmouseout="this.style.opacity='1'; this.style.transform='translateY(0)'">
@@ -436,13 +337,15 @@ export default class UIOverlay {
         position: fixed;
         bottom: 15vh;
         left: 5vh;
-        font-size: 1.15rem;
-        line-height: 1.6;
-        max-width: 560px;
+        font-size: ${globalTypography.body.fontSize};
+        font-weight: ${globalTypography.body.fontWeight};
+        line-height: ${globalTypography.body.lineHeight};
+        letter-spacing: ${globalTypography.body.letterSpacing};
+        max-width: 140px;
         opacity: 0;
         transition: opacity 0.3s ease-in-out;
       " id="bio-description">
-        I work at the intersection of design, motion, and technology. Right now, I’m exploring Creative Computing through a master’s at the University of Arts London. For me, good design moves, and great design moves you. I love creating ideas that feel alive—ideas that move, flow, and respond. My best work emerges from the sweet spot between calm and movement. 
+        I work at the intersection of design, motion, and technology. Right now, I’m exploring Creative Computing through a master’s at the University of Arts London. My best work emerges from the sweet spot between calm and movement. 
       </div>
     `;
     this.overlay.appendChild(element);
@@ -459,7 +362,9 @@ export default class UIOverlay {
       bottom: 15vh;
       right: 5vh;
       color: white;
-      font-size: 0.9rem;
+      font-size: ${globalTypography.caption.fontSize};
+      font-weight: ${globalTypography.caption.fontWeight};
+      letter-spacing: ${globalTypography.caption.letterSpacing};
       opacity: 0.8;
       z-index: 1001;
       pointer-events: none;
@@ -490,14 +395,14 @@ export default class UIOverlay {
           // Motivation text: adjust starting position based on component
           let startY, endY;
           
-          if (element.innerHTML.includes('Design that moves')) {
+          if (element.innerHTML.includes('I work at the intersection')) {
             // Component 2: Start lower on screen (not almost outside top)
             startY = -40; // Start lower than before (-50vh was too high)
             endY = 15;    // End closer to screen
-          } else if (element.innerHTML.includes('I work at the intersection')) {
+          } else if (element.innerHTML.includes('I feel a tension.')) {
             // Bio Description: Same as component 3 positioning but moves down more
             startY = -15; // Same starting position as component 3
-            endY = 11;    // Move down more than component 3 (was 20)
+            endY = 30;    // Move down more than component 3 (was 20)
           } else {
             // Component 3 (case study): Same movement range as component 2 for same speed
             startY = -25; // Same starting position as component 2
@@ -508,7 +413,7 @@ export default class UIOverlay {
           
           // FADE BEHAVIOR: fade in at 95% visible, fade out starting at 5% remaining
           // SPECIAL CASE: Bio description never fades out
-          if (element.innerHTML.includes('I work at the intersection')) {
+          if (element.innerHTML.includes('I feel a tension.')) {
             // Bio Description: Fade in but never fade out
             const range = timing.end - timing.start;
             const fadeInPoint = timing.start + (range * (1 - this.timings.globalFadeInThreshold));
@@ -542,7 +447,7 @@ export default class UIOverlay {
           // Bio description handled separately as its own component - REMOVED FROM HERE
           
           // Header and buttons movement: START FROM OUTSIDE SCREEN (-20vh) and move to original position (0vh)
-          const headerElement = element.querySelector('h2');
+          const headerElement = element.querySelector('h1');
           const buttonsElement = element.querySelector('div[style*="display: flex"]');
           
           const headerMoveStart = 0.3;   // Header/buttons start moving at 30% of component progress

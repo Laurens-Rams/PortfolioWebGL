@@ -24,6 +24,7 @@ import Tiles from './Sliders';
 import ClimbingWall, { CLIMBING_CONFIG } from './ClimbingWall';
 import SplineClimbingWall from './SplineClimbingWall';
 import UIOverlay from './UIOverlay';
+import { injectGlobalStyles } from './DesignSystem';
 
 const TL = new TextureLoader();
 
@@ -79,6 +80,9 @@ export default class App {
   }
 
   _init() {
+    // Inject global typography styles first
+    injectGlobalStyles();
+    
     // Device capability detection
     this._isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
     this._isLowEnd = this._isMobile || navigator.hardwareConcurrency <= 4;
