@@ -1,8 +1,42 @@
-import { Group, Vector3, MathUtils, AnimationMixer } from 'three';
+import { Group, Vector3, MathUtils, AnimationMixer, LoopOnce, LoopRepeat, MeshStandardMaterial, FrontSide } from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
 import { addGLBToTile, addGLBToTileNoAnimation } from './handleGLBModels';
 import { CLIMBING_CONFIG } from '../ClimbingWall';
 import store from "../store";
+
+// --- DEBUG MODE FLAG ---
+// Set to false for production builds to disable detailed logs, debug UI, and FPS counter
+const DEBUG_MODE = true;
+
+// TODO: Verify these animation names match the names in your fuckOFFFFF.glb file.
+// These are placeholders based on previously used indices.
+const IDLE_ANIM_NAME = "ANIM_NAME_FOR_INDEX_148";
+const CLIMBING_ANIM_NAME = "ANIM_NAME_FOR_INDEX_5";
+const STANDING_ANIM_NAME = "ANIM_NAME_FOR_INDEX_110";
+const TURN_AROUND_ANIM_NAME = "ANIM_NAME_FOR_INDEX_0";
+// Note: _turnToWallAction will use TURN_AROUND_ANIM_NAME and clone the clip.
+const CROSSFADE_DURATION = 0.25; // seconds for AnimationAction.crossFadeTo
+
+// Material cache to reuse materials and reduce memory for the main character
+const characterMaterialCache = new Map();
+
+// Optimized material creation with caching for the main character
+function getOptimizedCharacterMaterial(color, roughness, metalness) {
+  const key = `${color.isColor ? color.getHexString() : color}_${roughness}_${metalness}`; // Ensure color key is string
+
+  if (!characterMaterialCache.has(key)) {
+    const material = new MeshStandardMaterial({
+      color: color,
+      roughness: roughness,
+      metalness: metalness,
+      side: FrontSide // Assuming all character parts are FrontSide
+    });
+    characterMaterialCache.set(key, material);
+    if (DEBUG_MODE) console.log(`🔥 Created cached character material: ${key}`);
+  }
+
+  return characterMaterialCache.get(key);
+}
 
 export default class Tiles extends Group {
   constructor(camera, scene, pointLight, app, lights = {}) {
@@ -46,22 +80,14 @@ export default class Tiles extends Group {
       // Animation phases with precise scroll ranges
       phases: {
         idle: { start: 0, end: 0.005, action: null },           // 🔥 0-0.5% 
-        turnToWall: { start: 0.005, end: 0.08, action: null },   // 🔥 MUCH SLOWER: 0.5-8% (was 6%, now super deliberate)
-        crossfade: { start: 0.08, end: 0.095, action: null },   // 🔥 LIGHTNING FAST: 8-9.5% (was 3%, now 1.5% - super snappy)
-        climbing: { start: 0.095, end: 0.58, action: null },   // 🔥 MORE TRIMMED: 9.5-58% (gave up more climbing time)
+        turnToWall: { start: 0.005, end: 0.08, action: null },   // Action will play once. This range is mainly a trigger.
+        // crossfade phase removed - transition handled by crossFadeTo
+        climbing: { start: 0.08, end: 0.58, action: null },   // Starts where crossfade used to.
         standing: { start: 0.58, end: 0.90, action: null },   // 🔥 ADJUSTED: 58-90% (moved up further)
-        turnAround: { start: 0.90, end: 1.0, action: null } // 🔥 90-100%
+        turnAround: { start: 0.90, end: 1.0, action: null } // Action will play once. This range is mainly a trigger.
       },
       
-      // Crossfade system
-      crossfade: {
-        active: false,
-        progress: 0,
-        fromAction: null,
-        toAction: null,
-        fromWeight: 0,
-        toWeight: 0
-      },
+      // Crossfade system object removed
       
       // Performance optimization
       updateThrottle: 16, // ~60fps max
@@ -105,6 +131,9 @@ export default class Tiles extends Group {
     
     // UI System
     this.uiVisible = false;
+
+    // FPS Counter
+    this._fpsDisplay = null;
   }
 
   _init() {
@@ -113,6 +142,22 @@ export default class Tiles extends Group {
     
     // Initialize UI overlay system
 
+    if (DEBUG_MODE) {
+      this._createDebugControls(); // Debug UI for animation selection
+
+      // FPS Display Element Creation
+      this._fpsDisplay = document.createElement('div');
+      this._fpsDisplay.style.position = 'fixed';
+      this._fpsDisplay.style.top = '10px';
+      this._fpsDisplay.style.right = '10px';
+      this._fpsDisplay.style.color = 'white';
+      this._fpsDisplay.style.background = 'rgba(0,0,0,0.7)';
+      this._fpsDisplay.style.padding = '5px 10px';
+      this._fpsDisplay.style.fontFamily = 'monospace';
+      this._fpsDisplay.style.fontSize = '14px'; // Readable size
+      this._fpsDisplay.style.zIndex = '1002'; // Ensure it's above other UI like debug panel
+      document.body.appendChild(this._fpsDisplay);
+    }
     
     // Load standup animation - TEMPORARILY DISABLED
     // this._loadStandupAnimation();
@@ -136,69 +181,98 @@ export default class Tiles extends Group {
       
       // Store all animations
       this._allAnimations = gltf.animations;
+
+      // --- Material Optimization for Climber ---
+      // Define a shared material (or multiple based on logic)
+      // TODO: Adjust these default material properties as needed for the character's base look.
+      const sharedCharacterMaterial = getOptimizedCharacterMaterial(0xbbbbbb, 0.6, 0.1);
+      
+      this._climber.traverse((child) => {
+        if (child.isMesh) {
+          // TODO: Customize material strategy for the character.
+          // You can assign different materials based on child.name or original material properties.
+          // For example:
+          // if (child.name.includes('skin')) {
+          //   child.material = getOptimizedCharacterMaterial(0xffdbac, 0.8, 0.05); // A skin-like material
+          // } else if (child.name.includes('shirt')) {
+          //   child.material = getOptimizedCharacterMaterial(0x0055ff, 0.7, 0.1); // A blue fabric material
+          // } else {
+          //   child.material = sharedCharacterMaterial; // Default for other parts
+          // }
+          // For now, all meshes of the climber get the same shared material.
+          child.material = sharedCharacterMaterial;
+
+          // Note: child.matrixAutoUpdate is left to its default (true) for the climber,
+          // as dynamic updates (like head tracking, blinking) might rely on it.
+          // If further optimization is needed, this could be set to false,
+          // but ensure all transformations are then manually updated when necessary.
+        }
+      });
+      if (DEBUG_MODE) console.log('🔥 Climber materials optimized (basic single shared material applied).');
+      // --- End Material Optimization ---
       
       // Set up our four main animations - UPDATED ASSIGNMENTS (with safety checks)
-      console.log('🔥 Total animations found:', this._allAnimations.length);
-      
-      // Safety checks before creating actions (149 animations = indices 0-148)
-      if (this._allAnimations[148]) {
-        this._idleAction = this._mixer.clipAction(this._allAnimations[148]); // Idle at start (was 149, now 148)
+      if (DEBUG_MODE) console.log('🔥 Total animations found:', this._allAnimations.length);
+
+      // Load animations by name
+      const idleClip = this._allAnimations.find(clip => clip.name === IDLE_ANIM_NAME);
+      if (idleClip) {
+        this._idleAction = this._mixer.clipAction(idleClip);
       } else {
-        console.error('🔥 Animation 148 (idle) not found!');
+        console.error(`🔥 Animation "${IDLE_ANIM_NAME}" (expected for idle) not found! Check constants and GLB animation names.`);
+      }
+
+      const climbingClip = this._allAnimations.find(clip => clip.name === CLIMBING_ANIM_NAME);
+      if (climbingClip) {
+        this._climbingAction = this._mixer.clipAction(climbingClip);
+      } else {
+        console.error(`🔥 Animation "${CLIMBING_ANIM_NAME}" (expected for climbing) not found! Check constants and GLB animation names.`);
+      }
+
+      const standingClip = this._allAnimations.find(clip => clip.name === STANDING_ANIM_NAME);
+      if (standingClip) {
+        this._standingAction = this._mixer.clipAction(standingClip);
+      } else {
+        console.error(`🔥 Animation "${STANDING_ANIM_NAME}" (expected for standing) not found! Check constants and GLB animation names.`);
       }
       
-      if (this._allAnimations[5]) {
-        this._climbingAction = this._mixer.clipAction(this._allAnimations[5]); // Climbing during scroll
+      const turnAroundClip = this._allAnimations.find(clip => clip.name === TURN_AROUND_ANIM_NAME);
+      if (turnAroundClip) {
+        this._turnAroundAction = this._mixer.clipAction(turnAroundClip);
+        // For _turnToWallAction, clone the found clip
+        this._turnToWallAction = this._mixer.clipAction(turnAroundClip.clone());
+        if (DEBUG_MODE) console.log(`🔥 Using animation "${TURN_AROUND_ANIM_NAME}" for turn-around and turn-to-wall (turn-to-wall is a clone).`);
       } else {
-        console.error('🔥 Animation 5 (climbing) not found!');
-      }
-      
-      if (this._allAnimations[110]) {
-        this._standingAction = this._mixer.clipAction(this._allAnimations[110]); // Standing up (was 111, now 110)
-      } else {
-        console.error('🔥 Animation 110 (standing) not found!');
-      }
-      
-          // RESTORED: Use proper turn-around animation (0) - now that mixer.update(0) is fixed
-      if (this._allAnimations[0]) {
-      this._turnAroundAction = this._mixer.clipAction(this._allAnimations[0]); // Turn around - RESTORED
-      console.log('🔥 Using PROPER turn-around animation (0) - mixer fixed!');
-      } else {
-        console.error('🔥 Animation 0 (turn around) not found!');
-      }
-      
-          // CORRECT: Use animation 0 (turn) for turn-to-wall phase - but create separate action
-    if (this._allAnimations[0]) {
-      // Create a separate action instance for turn-to-wall (different from turn-around)
-      this._turnToWallAction = this._mixer.clipAction(this._allAnimations[0].clone());
-      console.log('🔥 Using animation 0 (TURN) for turn-to-wall - SEPARATE ACTION!');
-    } else {
-      console.error('🔥 Animation 0 (turn) not found for turn-to-wall!');
+        console.error(`🔥 Animation "${TURN_AROUND_ANIM_NAME}" (expected for turn-around/turn-to-wall) not found! Check constants and GLB animation names.`);
       }
       
       // Configure animations (only if they exist)
       if (this._idleAction) {
-        this._idleAction.setLoop(2, Infinity);
+        this._idleAction.setLoop(LoopRepeat, Infinity);
         this._idleAction.timeScale = 0.5; // Faster for testing - was 0.02
       }
       
       if (this._climbingAction) {
-        this._climbingAction.setLoop(2, Infinity);
+        this._climbingAction.setLoop(LoopRepeat, Infinity);
         this._climbingAction.timeScale = 1.0;
+        // Paused state for climbing will be handled in _transitionToState or _updateCurrentAnimation
       }
       
       if (this._standingAction) {
-        this._standingAction.setLoop(2, 1); // No loop for standing
+        this._standingAction.setLoop(LoopOnce, 1);
+        this._standingAction.clampWhenFinished = true;
         this._standingAction.timeScale = 1.0;
       }
       
       if (this._turnAroundAction) {
-        this._turnAroundAction.setLoop(2, 1); // No loop for turn around
+        this._turnAroundAction.setLoop(LoopOnce, 1);
+        this._turnAroundAction.clampWhenFinished = true;
         this._turnAroundAction.timeScale = 1.0;
       }
       
       if (this._turnToWallAction) {
-        this._turnToWallAction.setLoop(2, 1); // No loop for turn to wall
+        this._turnToWallAction.setLoop(LoopOnce, 1);
+        this._turnToWallAction.clampWhenFinished = true;
         this._turnToWallAction.timeScale = 1.0;
       }
       
@@ -214,9 +288,11 @@ export default class Tiles extends Group {
         // CRITICAL FIX: Initialize animation controller timing properly
         this._animationController.lastUpdateTime = performance.now();
         
-        console.log('🔥 IDLE ACTION STORED IN CONTROLLER PHASES');
-        console.log('🔥 INITIAL SCROLL OFFSET:', this._currentScrollOffset);
-        console.log('🔥 ANIMATION CONTROLLER TIMING INITIALIZED:', this._animationController.lastUpdateTime);
+        if (DEBUG_MODE) {
+          console.log('🔥 IDLE ACTION STORED IN CONTROLLER PHASES');
+          console.log('🔥 INITIAL SCROLL OFFSET:', this._currentScrollOffset);
+          console.log('🔥 ANIMATION CONTROLLER TIMING INITIALIZED:', this._animationController.lastUpdateTime);
+        }
       } else {
         console.error('🔥 No idle action available - using first animation as fallback');
         if (this._allAnimations.length > 0) {
@@ -233,13 +309,13 @@ export default class Tiles extends Group {
       this._moveCameraWithScroll(0);
       
       // Add debug controls to find correct animations
-      this._createDebugControls();
+      // this._createDebugControls(); // Removed: Called conditionally in _init()
       
       // Initialize keyboard events
       this._initEvents();
       
       // DEBUG: Log initial setup with more details
-      console.log('🔥 Climber loaded - Initial idle setup:', {
+      if (DEBUG_MODE) console.log('🔥 Climber loaded - Initial idle setup:', {
         state: this._animationController.currentState,
         currentAction: this._currentAction?.getClip().name,
         paused: this._currentAction?.paused,
@@ -251,67 +327,70 @@ export default class Tiles extends Group {
       });
       
       // FORCE DEBUG: Test the idle action immediately
-      setTimeout(() => {
-        console.log('🔥 IDLE ACTION TEST (after 1 second):', {
-          idleExists: !!this._idleAction,
-          currentAction: this._currentAction?.getClip().name,
-          isRunning: this._currentAction?.isRunning(),
-          paused: this._currentAction?.paused,
-          weight: this._currentAction?.weight,
-          time: this._currentAction?.time,
-          mixerExists: !!this._mixer
-        });
-        
-                 // Force mixer update to see if that helps
-         if (this._mixer) {
-           this._mixer.update(0.016); // Force one frame update
-           console.log('🔥 FORCED MIXER UPDATE - Time after update:', this._currentAction?.time);
-         }
-         
-         // FORCE IDLE RESTART - Nuclear option
-         if (this._idleAction) {
-           console.log('🔥 FORCING IDLE RESTART...');
-           this._idleAction.stop();
-           this._idleAction.reset();
-           this._idleAction.weight = 1.0;
-           this._idleAction.enabled = true;
-           this._idleAction.paused = false;
-           this._idleAction.play();
-           this._currentAction = this._idleAction;
-           
-           // Force mixer update after restart
-           this._mixer.update(0.016);
-           
-           console.log('🔥 IDLE FORCED RESTART COMPLETE:', {
-             isRunning: this._idleAction.isRunning(),
-             paused: this._idleAction.paused,
-             weight: this._idleAction.weight,
-             time: this._idleAction.time
-           });
-         }
-       }, 1000);
+      if (DEBUG_MODE) {
+        setTimeout(() => {
+          if (DEBUG_MODE) console.log('🔥 IDLE ACTION TEST (after 1 second):', {
+            idleExists: !!this._idleAction,
+            currentAction: this._currentAction?.getClip().name,
+            isRunning: this._currentAction?.isRunning(),
+            paused: this._currentAction?.paused,
+            weight: this._currentAction?.weight,
+            time: this._currentAction?.time,
+            mixerExists: !!this._mixer
+          });
+
+                  // Force mixer update to see if that helps
+          if (this._mixer) {
+            this._mixer.update(0.016); // Force one frame update
+            if (DEBUG_MODE) console.log('🔥 FORCED MIXER UPDATE - Time after update:', this._currentAction?.time);
+          }
+
+          // FORCE IDLE RESTART - Nuclear option
+          if (this._idleAction) {
+            if (DEBUG_MODE) console.log('🔥 FORCING IDLE RESTART...');
+            this._idleAction.stop();
+            this._idleAction.reset();
+            this._idleAction.weight = 1.0;
+            this._idleAction.enabled = true;
+            this._idleAction.paused = false;
+            this._idleAction.play();
+            this._currentAction = this._idleAction;
+
+            // Force mixer update after restart
+            this._mixer.update(0.016);
+
+            if (DEBUG_MODE) console.log('🔥 IDLE FORCED RESTART COMPLETE:', {
+              isRunning: this._idleAction.isRunning(),
+              paused: this._idleAction.paused,
+              weight: this._idleAction.weight,
+              time: this._idleAction.time
+            });
+          }
+        }, 1000);
+      }
       
       // DEBUG: Log all available animations
-      console.log('🔥 Available animations:', this._allAnimations.map((anim, index) => ({
+      if (DEBUG_MODE) console.log('🔥 Available animations:', this._allAnimations.map((anim, index) => ({
         index,
         name: anim.name,
         duration: anim.duration.toFixed(2)
       })));
       
       // DEBUG: Log which animations we're actually using
-      console.log('🔥 ANIMATION ASSIGNMENTS:', {
-        idle: this._idleAction ? `${148}: ${this._allAnimations[148]?.name}` : 'MISSING',
-        climbing: this._climbingAction ? `${5}: ${this._allAnimations[5]?.name}` : 'MISSING',
-        standing: this._standingAction ? `${110}: ${this._allAnimations[110]?.name}` : 'MISSING',
-              turnAround: this._turnAroundAction ? `${0}: ${this._allAnimations[0]?.name}` : 'MISSING',
-      turnToWall: this._turnToWallAction ? `${this._turnToWallAction ? this._getAnimationIndex(this._turnToWallAction) : 'UNKNOWN'}: ${this._turnToWallAction?.getClip().name}` : 'MISSING'
+      if (DEBUG_MODE) console.log('🔥 ANIMATION ASSIGNMENTS:', {
+        idle: this._idleAction ? `(Searched for "${IDLE_ANIM_NAME}") ${this._idleAction.getClip().name}` : `MISSING (Searched for "${IDLE_ANIM_NAME}")`,
+        climbing: this._climbingAction ? `(Searched for "${CLIMBING_ANIM_NAME}") ${this._climbingAction.getClip().name}` : `MISSING (Searched for "${CLIMBING_ANIM_NAME}")`,
+        standing: this._standingAction ? `(Searched for "${STANDING_ANIM_NAME}") ${this._standingAction.getClip().name}` : `MISSING (Searched for "${STANDING_ANIM_NAME}")`,
+        turnAround: this._turnAroundAction ? `(Searched for "${TURN_AROUND_ANIM_NAME}") ${this._turnAroundAction.getClip().name}` : `MISSING (Searched for "${TURN_AROUND_ANIM_NAME}")`,
+        turnToWall: this._turnToWallAction ? `(Clone of "${TURN_AROUND_ANIM_NAME}") ${this._turnToWallAction.getClip().name}` : `MISSING (Clone of "${TURN_AROUND_ANIM_NAME}")`
       });
       
       this.add(this._climber);
     },
     // Progress callback
     (progress) => {
-      console.log('🔥 Loading progress:', (progress.loaded / progress.total * 100).toFixed(1) + '%');
+      // This log is frequent, consider reducing frequency even in DEBUG_MODE if too noisy
+      if (DEBUG_MODE && progress.total > 0) console.log('🔥 Loading progress:', (progress.loaded / progress.total * 100).toFixed(1) + '%');
     },
     // Error callback
     (error) => {
@@ -411,7 +490,7 @@ export default class Tiles extends Group {
     
     const animation = this._allAnimations[index];
     if (animation) {
-      console.log('🔥 Loading animation:', {
+      if (DEBUG_MODE) console.log('🔥 Loading animation (debug UI):', {
         index,
         name: animation.name,
         duration: animation.duration,
@@ -448,7 +527,7 @@ export default class Tiles extends Group {
       // Initialize blinking system
       this._cacheEyeBones();
       this._scheduleNextBlink();
-      console.log('🔥 Head tracking initialized with blinking system');
+      if (DEBUG_MODE) console.log('🔥 Head tracking initialized with blinking system.');
     }
   }
   
@@ -467,7 +546,7 @@ export default class Tiles extends Group {
             boneName.includes('blink') ||
             boneName.includes('lid')) {
           this._eyeBones.push(child);
-          console.log('🔥 Found eye bone:', child.name);
+          if (DEBUG_MODE) console.log('🔥 Found eye bone:', child.name);
         }
       }
       
@@ -479,15 +558,15 @@ export default class Tiles extends Group {
             meshName.includes('eye') ||
             child.morphTargetDictionary) {
           this._faceMeshes.push(child);
-          console.log('🔥 Found face mesh with morphs:', child.name, 'Morph count:', child.morphTargetInfluences.length);
+          if (DEBUG_MODE) console.log('🔥 Found face mesh with morphs:', child.name, 'Morph count:', child.morphTargetInfluences.length);
           
           // Log available morph targets
-          if (child.morphTargetDictionary) {
+          if (DEBUG_MODE && child.morphTargetDictionary) {
             Object.keys(child.morphTargetDictionary).forEach(morphName => {
               if (morphName.toLowerCase().includes('blink') || 
                   morphName.toLowerCase().includes('eye') ||
                   morphName.toLowerCase().includes('close')) {
-                console.log('🔥 Found blink morph:', morphName, 'at index:', child.morphTargetDictionary[morphName]);
+                if (DEBUG_MODE) console.log('🔥 Found blink morph:', morphName, 'at index:', child.morphTargetDictionary[morphName]);
               }
             });
           }
@@ -495,8 +574,10 @@ export default class Tiles extends Group {
       }
     });
     
-    console.log('🔥 Total eye bones found:', this._eyeBones.length);
-    console.log('🔥 Total face meshes found:', this._faceMeshes.length);
+    if (DEBUG_MODE) {
+      console.log('🔥 Total eye bones found:', this._eyeBones.length);
+      console.log('🔥 Total face meshes found:', this._faceMeshes.length);
+    }
   }
   
   _scheduleNextBlink() {
@@ -535,7 +616,7 @@ export default class Tiles extends Group {
     this._blinkStartTime = Date.now();
     
     // Debug log occasionally
-    if (Math.random() < 0.1) {
+    if (DEBUG_MODE && Math.random() < 0.1) {
       console.log('🔥 Character blink started');
     }
   }
@@ -664,7 +745,7 @@ export default class Tiles extends Group {
   _switchToStanding() {
     if (!this._canChangeState('standing')) return;
     
-    console.log('🔥 Switching to standing - SIMPLE');
+    if (DEBUG_MODE) console.log('🔥 Switching to standing - SIMPLE');
     
     // Reset captured positions when switching to standing (so they can be recaptured)
     this._standingEndHipPosition = null;
@@ -696,7 +777,7 @@ export default class Tiles extends Group {
   _switchToIdle() {
     if (!this._canChangeState('idle')) return;
     
-    console.log('🔥 Switching to idle - SIMPLE');
+    if (DEBUG_MODE) console.log('🔥 Switching to idle - SIMPLE');
     this._animationController.currentState = 'idle';
     this._isIdle = true;
     this._isScrolling = false;
@@ -718,7 +799,7 @@ export default class Tiles extends Group {
     this._currentAction = this._idleAction;
     
     // DEBUG: Log idle animation details
-    console.log('🔥 Idle animation started:', {
+    if (DEBUG_MODE) console.log('🔥 Idle animation started:', {
       name: this._idleAction.getClip().name,
       duration: this._idleAction.getClip().duration,
       paused: this._idleAction.paused,
@@ -730,10 +811,9 @@ export default class Tiles extends Group {
   _switchToTurnToWall() {
     if (!this._canChangeState('turnToWall')) return;
     
-    console.log('🔥 Switching to turn to wall - RESTORED');
+    if (DEBUG_MODE) console.log('🔥 Switching to turn to wall - RESTORED');
     
-    // Reset crossfade initialization when going back to turn-to-wall
-    this._setupCrossfade();
+    // Old _setupCrossfade() call removed, it's handled by _transitionToState now.
     
     this._animationController.currentState = 'turnToWall';
     this._isIdle = false;
@@ -741,7 +821,7 @@ export default class Tiles extends Group {
     
     // Stop current action completely
     if (this._currentAction) {
-      console.log('🔥 TURN-TO-WALL: Stopping current action:', this._currentAction.getClip().name);
+      if (DEBUG_MODE) console.log('🔥 TURN-TO-WALL: Stopping current action:', this._currentAction.getClip().name);
       this._currentAction.stop();
       this._currentAction.weight = 0;
     }
@@ -753,7 +833,7 @@ export default class Tiles extends Group {
     }
     
     // Start turn-to-wall action fresh - PAUSED for scroll control
-    console.log('🔥 TURN-TO-WALL: Starting action:', this._turnToWallAction.getClip().name);
+    if (DEBUG_MODE) console.log('🔥 TURN-TO-WALL: Starting action:', this._turnToWallAction.getClip().name);
     this._turnToWallAction.reset();
     this._turnToWallAction.weight = 1.0;
     this._turnToWallAction.play();
@@ -763,7 +843,7 @@ export default class Tiles extends Group {
     this._currentAction = this._turnToWallAction;
     
     // DEBUG: Log turn to wall animation details
-    console.log('🔥 Turn to wall animation started:', {
+    if (DEBUG_MODE) console.log('🔥 Turn to wall animation started:', {
       name: this._turnToWallAction.getClip().name,
       duration: this._turnToWallAction.getClip().duration,
       paused: this._turnToWallAction.paused,
@@ -776,7 +856,7 @@ export default class Tiles extends Group {
   _switchToTurnAround() {
     if (!this._canChangeState('turnAround')) return;
     
-    console.log('🔥 Switching to turn around - SIMPLE');
+    if (DEBUG_MODE) console.log('🔥 Switching to turn around - SIMPLE');
     
     // Hip position will be captured at the end of standing animation (95% scroll)
     // and used for correction during turn-around
@@ -787,7 +867,7 @@ export default class Tiles extends Group {
     
     // Stop current action completely
     if (this._currentAction) {
-      console.log('🔥 TURN-AROUND: Stopping current action:', this._currentAction.getClip().name);
+      if (DEBUG_MODE) console.log('🔥 TURN-AROUND: Stopping current action:', this._currentAction.getClip().name);
       this._currentAction.stop();
       this._currentAction.weight = 0;
     }
@@ -799,7 +879,7 @@ export default class Tiles extends Group {
     }
     
     // Start turn around action fresh - PAUSED for scroll control
-    console.log('🔥 TURN-AROUND: Starting action:', this._turnAroundAction.getClip().name);
+    if (DEBUG_MODE) console.log('🔥 TURN-AROUND: Starting action:', this._turnAroundAction.getClip().name);
     this._turnAroundAction.reset();
     this._turnAroundAction.weight = 1.0;
     this._turnAroundAction.play();
@@ -809,26 +889,26 @@ export default class Tiles extends Group {
     // Set initial rotation to face away (180°) - animation will turn character to face camera
     if (this._climber) {
       this._climber.rotation.y = Math.PI; // Start facing away (180°)
-      console.log('🔥 TURN-AROUND: Set initial rotation to 180° (facing away)');
+      if (DEBUG_MODE) console.log('🔥 TURN-AROUND: Set initial rotation to 180° (facing away)');
     }
     
     this._currentAction = this._turnAroundAction;
     
     // Check hip position after switching and store the target position
-    if (this._hipBone && this._originalHipPosition) {
+    if (DEBUG_MODE && this._hipBone && this._originalHipPosition) { // Already wrapped in DEBUG_MODE
       const newHipPosition = this._hipBone.position.clone();
       const hipPositionDiff = newHipPosition.clone().sub(this._originalHipPosition);
-      console.log('🔥 Hip position after turn around:', newHipPosition);
-      console.log('🔥 Hip position difference (turn - standing):', hipPositionDiff);
+      console.log('🔥 Hip position after turn around:', newHipPosition); // This specific log was not wrapped yet
+      console.log('🔥 Hip position difference (turn - standing):', hipPositionDiff); // Nor this one
       
       // Store the offset for compensation
       this._turnAroundHipOffset = hipPositionDiff.clone();
       
-      console.log('🔥 Will maintain hip at position:', this._originalHipPosition);
+      console.log('🔥 Will maintain hip at position:', this._originalHipPosition); // And this one
     }
     
     // DEBUG: Log turn around animation details
-    console.log('🔥 Turn around animation started:', {
+    if (DEBUG_MODE) console.log('🔥 Turn around animation started:', { // This outer one was already conditional
       name: this._turnAroundAction.getClip().name,
       duration: this._turnAroundAction.getClip().duration,
       paused: this._turnAroundAction.paused,
@@ -855,7 +935,7 @@ export default class Tiles extends Group {
           if (boneName.includes('hip') || boneName.includes('root') || boneName.includes('pelvis')) {
             this._hipBone = child;
             currentHipPosition = child.position.clone();
-            console.log('🔥 Found and cached hip bone:', child.name, 'Position:', currentHipPosition);
+            if (DEBUG_MODE) console.log('🔥 Found and cached hip bone:', child.name, 'Position:', currentHipPosition); // This log is already conditional
             
             // Store the original position (where we want to keep it)
             this._originalHipPosition = currentHipPosition.clone();
@@ -869,6 +949,11 @@ export default class Tiles extends Group {
   // REMOVED: _handlePortfolioCamera - camera now moves linearly, character positioning handled by animations
 
   update(deltaTime, mouseX, mouseY) {
+    if (DEBUG_MODE && this._fpsDisplay && deltaTime > 0) {
+      const fps = 1.0 / deltaTime;
+      this._fpsDisplay.textContent = `FPS: ${fps.toFixed(1)}`;
+    }
+
     // Performance optimization - skip updates if FPS is too low
     this._frameCount = (this._frameCount || 0) + 1;
     const shouldSkipFrame = this._frameCount % 2 === 0 && deltaTime > 0.033; // Skip every other frame if running below 30fps
@@ -881,7 +966,7 @@ export default class Tiles extends Group {
     // PROFESSIONAL ANIMATION CONTROLLER - SINGLE UPDATE POINT
     if (!shouldSkipFrame) {
       // DEBUG: Confirm animation controller is being called
-      if (Math.random() < 0.02) {
+      if (DEBUG_MODE && Math.random() < 0.02) {
         console.log('🔥 CALLING ANIMATION CONTROLLER:', {
           shouldSkipFrame,
           deltaTime: deltaTime.toFixed(4),
@@ -891,7 +976,7 @@ export default class Tiles extends Group {
       this._updateAnimationController(this._currentScrollOffset, deltaTime);
     } else {
       // DEBUG: Log when frames are skipped
-      if (Math.random() < 0.01) {
+      if (DEBUG_MODE && Math.random() < 0.01) {
         console.log('🔥 FRAME SKIPPED - Animation controller not called');
       }
     }
@@ -928,7 +1013,7 @@ export default class Tiles extends Group {
       // Apply the offset to the character's position (not the hip bone directly)
       this._climber.position.add(offset);
       
-      console.log('🔥 HIP COMPENSATION APPLIED:', {
+      if (DEBUG_MODE) console.log('🔥 HIP COMPENSATION APPLIED:', {
         currentHipWorld: currentHipWorldPosition,
         desiredHipWorld: this._standingEndHipPosition,
         offset: offset,
@@ -953,8 +1038,10 @@ export default class Tiles extends Group {
       this._standingStartHipPosition = hipWorldPosition.clone();
       this._standingStartCharacterPosition = this._climber.position.clone();
       
-      console.log('🔥 CACHED standing start hip position:', this._standingStartHipPosition);
-      console.log('🔥 CACHED standing start character position:', this._standingStartCharacterPosition);
+      if (DEBUG_MODE) {
+        console.log('🔥 CACHED standing start hip position:', this._standingStartHipPosition);
+        console.log('🔥 CACHED standing start character position:', this._standingStartCharacterPosition);
+      }
     }
     
     // Get current hip world position
@@ -970,7 +1057,7 @@ export default class Tiles extends Group {
     this._climber.position.copy(compensatedPosition);
     
     // DEBUG: Log position compensation occasionally
-    if (Math.random() < 0.1) { // 10% of the time for better debugging
+    if (DEBUG_MODE && Math.random() < 0.1) { // 10% of the time for better debugging
       console.log('🔥 STANDING POSITION COMPENSATION:', {
         progress: standingProgress.toFixed(3),
         startHip: this._standingStartHipPosition ? {
@@ -1074,7 +1161,7 @@ export default class Tiles extends Group {
     const mouseHeadRotationX = -this._mouseY * mouseInfluenceVertical;
     
     // Debug logging to verify head tracking is working
-    if (Math.random() < 0.02) { // Log 2% of the time
+    if (DEBUG_MODE && Math.random() < 0.02) { // Log 2% of the time
       console.log('🔥 Head tracking:', { 
         state: this._animationController.currentState,
         mouseX: this._mouseX?.toFixed(3), 
@@ -1317,7 +1404,7 @@ export default class Tiles extends Group {
       }
     });
     
-    if (tPoseDetected) {
+    if (DEBUG_MODE && tPoseDetected) {
       console.log('🔥 T-POSE DETECTED!', {
         state: this._animationController.currentState,
         currentAction: this._currentAction?.getClip().name,
@@ -1382,20 +1469,31 @@ export default class Tiles extends Group {
   }
 
   _toggleUIControls() {
+    // If not in debug mode, or if debug panel was never created, do nothing or only toggle visible game UI elements.
+    if (!DEBUG_MODE && !this._debugPanel) { // A bit redundant if _debugPanel is only created in DEBUG_MODE
+      // Potentially toggle other non-debug UI elements if any
+      return;
+    }
+
     this.uiVisible = !this.uiVisible;
     
     // Toggle debug panel
-    if (this._debugPanel) {
+    if (this._debugPanel) { // Check if debug panel exists
       this._debugPanel.style.display = this.uiVisible ? 'block' : 'none';
     }
     
-    // Toggle performance display if it exists
-    const performanceDisplay = document.querySelector('.performance-display');
+    // Toggle FPS display
+    if (this._fpsDisplay) { // Check if FPS display exists
+        this._fpsDisplay.style.display = this.uiVisible ? 'block' : 'none';
+    }
+
+    // Toggle general performance display if it exists (e.g. from three-perf)
+    const performanceDisplay = document.querySelector('.three-perf-ui'); // Corrected selector
     if (performanceDisplay) {
       performanceDisplay.style.display = this.uiVisible ? 'block' : 'none';
     }
     
-    console.log('🔥 UI Controls:', this.uiVisible ? 'VISIBLE' : 'HIDDEN');
+    if (DEBUG_MODE) console.log('🔥 UI Controls:', this.uiVisible ? 'VISIBLE' : 'HIDDEN');
   }
 
   dispose() {
@@ -1425,15 +1523,15 @@ export default class Tiles extends Group {
     // CRITICAL FIX: Initialize timing on first run if not already done
     if (controller.lastUpdateTime === 0 || controller.lastUpdateTime < 0 || isNaN(controller.lastUpdateTime)) {
       controller.lastUpdateTime = now;
-      console.log('🔥 ANIMATION CONTROLLER TIMING FIXED ON FIRST RUN:', now);
+      if (DEBUG_MODE) console.log('🔥 ANIMATION CONTROLLER TIMING FIXED ON FIRST RUN:', now);
     }
     
     // Rotation tracking (debug removed for performance)
     
     // Performance throttling - TEMPORARILY DISABLED FOR DEBUGGING
-    if (false && now - controller.lastUpdateTime < controller.updateThrottle && !controller.forceUpdate) {
+    if (DEBUG_MODE && false && now - controller.lastUpdateTime < controller.updateThrottle && !controller.forceUpdate) {
       // DEBUG: Log when throttling blocks updates
-      if (Math.random() < 0.01) {
+      if (DEBUG_MODE && Math.random() < 0.01) { // Ensure inner is also conditional if outer is ever changed
         console.log('🔥 ANIMATION CONTROLLER THROTTLED:', {
           timeSinceLastUpdate: (now - controller.lastUpdateTime).toFixed(1),
           throttleLimit: controller.updateThrottle,
@@ -1475,7 +1573,7 @@ export default class Tiles extends Group {
     
     if (scrollOffset <= phases.idle.end) return 'idle';
     if (scrollOffset <= phases.turnToWall.end) return 'turnToWall';
-    if (scrollOffset <= phases.crossfade.end) return 'crossfade';
+    // crossfade phase removed, climbing starts earlier
     if (scrollOffset <= phases.climbing.end) return 'climbing';
     if (scrollOffset <= phases.standing.end) return 'standing';
     return 'turnAround';
@@ -1502,32 +1600,66 @@ export default class Tiles extends Group {
     // Set up new action
     const newAction = this._getActionForState(newState);
     if (newAction) {
-      // CRITICAL FIX: Don't reset idle action if it's already running properly
-      if (newState === 'idle' && newAction.isRunning() && !newAction.paused) {
-        console.log('🔥 IDLE: Keeping existing idle animation running - no reset needed');
-        // Just ensure proper settings without resetting
+      let oldAction = this._currentAction;
+      if (controller.phases[oldState] && controller.phases[oldState].action) {
+        oldAction = controller.phases[oldState].action;
+      }
+
+      if (newState === 'idle') {
+        if (newAction.isRunning() && !newAction.paused) {
+          if (DEBUG_MODE) console.log('🔥 IDLE: Keeping existing idle animation running - no reset needed');
+        } else {
+          newAction.reset().play();
+        }
+        newAction.paused = false;
+      } else if (newState === 'turnToWall' || newState === 'turnAround') {
+        newAction.reset().play();
+        newAction.paused = false; // These play once and stop, then hold
+      } else if (newState === 'climbing') {
+        if (oldState === 'turnToWall' && oldAction && newAction && oldAction !== newAction) {
+          if (DEBUG_MODE) console.log(`🔥 Crossfading from ${oldAction.getClip().name} to ${newAction.getClip().name} over ${CROSSFADE_DURATION}s`);
+          oldAction.crossFadeTo(newAction, CROSSFADE_DURATION, true);
+          // Ensure new action is playing for crossfade to take effect.
+          // Weight will be managed by crossFadeTo.
+          newAction.enabled = true;
+          newAction.play();
+        } else if (oldAction !== newAction) { // Standard play if not crossfading or if it's a different action
+          newAction.reset().play();
+        } else { // Resuming the same climbing action
+           newAction.play(); // Ensure it's playing if paused
+        }
+        newAction.paused = true; // Climbing is scroll-controlled
+      } else { // standing
+        if (oldAction !== newAction) {
+            newAction.reset().play();
+        } else {
+            newAction.play(); // Ensure it's playing if paused
+        }
+        newAction.paused = true; // Standing is scroll-controlled
+      }
+
+      if (!(newState === 'climbing' && oldState === 'turnToWall')) {
+        // If not crossfading, ensure new action has full weight.
+        // crossFadeTo handles weight for the target action.
         newAction.weight = 1.0;
-        newAction.enabled = true;
-      } else {
-        // Reset for all other states or if idle needs to be restarted
-        newAction.reset();
-        newAction.play();
-        newAction.paused = (newState !== 'idle'); // Only idle runs freely
-        newAction.weight = 1.0;
-        newAction.enabled = true;
-        newAction.time = 0;
-        
-        // Animation reset (debug removed for performance)
+      }
+      newAction.enabled = true;
+
+      // Reset time only if not a continuous or crossfaded action
+      if (newState !== 'climbing' && newState !== 'idle') {
+         if (oldAction !== newAction || (newState !== 'turnToWall' && newState !== 'turnAround')) {
+            newAction.time = 0;
+         }
       }
       
       controller.phases[newState].action = newAction;
       this._currentAction = newAction;
     }
     
-    // Handle special crossfade setup
-    if (newState === 'crossfade') {
-      this._setupCrossfade();
-    }
+    // Removed: Crossfade setup is now part of 'climbing' transition logic when coming from 'turnToWall'
+    // if (newState === 'crossfade') {
+    //  this._setupCrossfade(); // This method is being removed
+    // }
     
     controller.currentState = newState;
     controller.targetState = newState;
@@ -1538,7 +1670,7 @@ export default class Tiles extends Group {
     switch (state) {
       case 'idle': return this._idleAction;
       case 'turnToWall': return this._turnToWallAction;
-      case 'crossfade': return this._climbingAction; // Primary action for crossfade
+      // case 'crossfade': // crossfade state removed
       case 'climbing': return this._climbingAction;
       case 'standing': return this._standingAction;
       case 'turnAround': return this._turnAroundAction;
@@ -1594,15 +1726,14 @@ export default class Tiles extends Group {
         break;
         
       case 'turnToWall':
-        if (this._turnToWallAction) {
-          const duration = this._turnToWallAction.getClip().duration;
-          this._turnToWallAction.time = duration * 0.5 * phaseProgress; // Use 50% of animation
-        }
+        // Action plays once due to LoopOnce, no manual time scrubbing needed.
+        // Its progress is implicitly handled by its internal clock.
+        // If it needs to pause at the end, clampWhenFinished handles it.
         break;
         
-      case 'crossfade':
-        this._updateCrossfade(phaseProgress);
-        break;
+      // case 'crossfade': // crossfade state and _updateCrossfade method removed
+        // this._updateCrossfade(phaseProgress);
+        // break;
         
       case 'climbing':
         if (this._climbingAction) {
@@ -1623,10 +1754,7 @@ export default class Tiles extends Group {
         break;
         
       case 'turnAround':
-        if (this._turnAroundAction) {
-          const duration = this._turnAroundAction.getClip().duration;
-          this._turnAroundAction.time = duration * phaseProgress;
-        }
+        // Action plays once due to LoopOnce, no manual time scrubbing needed.
         break;
     }
     
@@ -1658,29 +1786,52 @@ export default class Tiles extends Group {
     const controller = this._animationController;
     
     if (!this._mixer) {
-      if (Math.random() < 0.01) {
+      if (DEBUG_MODE && Math.random() < 0.01) {
         console.log('🔥 MIXER UPDATE FAILED: No mixer available');
       }
       return;
     }
     
-    // SINGLE MIXER UPDATE - no more scattered mixer.update(0) calls
-    if (controller.currentState === 'idle') {
-      // Only idle uses deltaTime for continuous animation
+    // SINGLE MIXER UPDATE
+    const state = controller.currentState;
+
+    if (state === 'idle' || state === 'turnToWall' || state === 'turnAround') {
+      // These animations play out over time using deltaTime
       this._mixer.update(deltaTime);
       
-      // DEBUG: Log idle mixer updates occasionally
-      if (Math.random() < 0.02) {
-        console.log('🔥 IDLE MIXER UPDATE:', {
-          deltaTime: deltaTime.toFixed(4),
+      // Optional: More specific debug logging
+      if (DEBUG_MODE) {
+        if (state === 'idle' && Math.random() < 0.02) {
+          console.log('🔥 IDLE MIXER UPDATE (deltaTime):', {
+            deltaTime: deltaTime.toFixed(4),
+            actionTime: this._currentAction?.time?.toFixed(3),
+            actionRunning: this._currentAction?.isRunning(),
+            actionPaused: this._currentAction?.paused
+          });
+        } else if ((state === 'turnToWall' || state === 'turnAround') && Math.random() < 0.05) {
+          console.log(`🔥 ${state.toUpperCase()} MIXER UPDATE (deltaTime):`, {
+            deltaTime: deltaTime.toFixed(4),
+            actionTime: this._currentAction?.time?.toFixed(3),
+            actionRunning: this._currentAction?.isRunning(),
+            actionPaused: this._currentAction?.paused,
+            loopMode: this._currentAction?.loop,
+            clampWhenFinished: this._currentAction?.clampWhenFinished
+          });
+        }
+      }
+    } else {
+      // These animations are manually posed based on scroll (climbing, standing)
+      // or are part of a crossfade that needs precise pose updates.
+      // mixer.update(0) ensures the pose is updated to action.time without advancing time.
+      this._mixer.update(0);
+
+      // Optional: Debug logging for posed states
+      if (DEBUG_MODE && (state === 'climbing' || state === 'standing') && Math.random() < 0.02) {
+         console.log(`🔥 ${state.toUpperCase()} MIXER UPDATE (0):`, {
           actionTime: this._currentAction?.time?.toFixed(3),
-          actionRunning: this._currentAction?.isRunning(),
           actionPaused: this._currentAction?.paused
         });
       }
-    } else {
-      // All scroll-controlled animations use forced pose updates
-      this._mixer.update(0);
     }
   }
   
@@ -1695,16 +1846,15 @@ export default class Tiles extends Group {
         break;
         
       case 'turnToWall':
-        // Smoothly transition from 0° to starting wall-face position (LEFT TURN)
-        const turnProgress = controller.stateProgress;
-        this._climber.rotation.y = -turnProgress * Math.PI * 0.3; // 🔥 FIXED: Negative for left turn
+        // Animation should handle rotation. Commenting out manual override.
+        // const turnProgress = controller.stateProgress;
+        // this._climber.rotation.y = -turnProgress * Math.PI * 0.3; // 🔥 FIXED: Negative for left turn
         break;
         
-      case 'crossfade':
-        // Smoothly transition to face wall completely (LEFT TURN)
-        const crossfadeProgress = controller.crossfade.progress;
-        this._climber.rotation.y = -(Math.PI * 0.3) - (crossfadeProgress * Math.PI * 0.7); // 🔥 FIXED: Negative for left turn
-        break;
+      // case 'crossfade': // This state is removed. Rotation during transition should be handled by animations or climbing state.
+        // const crossfadeProgress = controller.crossfade.progress;
+        // this._climber.rotation.y = -(Math.PI * 0.3) - (crossfadeProgress * Math.PI * 0.7);
+        // break;
         
       case 'climbing':
         // Face the wall during climbing (-180°)
@@ -1717,6 +1867,7 @@ export default class Tiles extends Group {
         break;
         
       case 'turnAround':
+        // Animation should handle rotation. Commenting out manual override.
         // Let the turn-around animation handle rotation naturally - DON'T OVERRIDE
         break;
     }
