@@ -7,6 +7,8 @@ export default class SplineClimbingWall extends Group {
     this._canvas = null;
     this._isVisible = true;
     this._fadeInManager = null;
+    this._splineLoaded = false;
+    this._shouldLazyLoad = true; // 🔥 Enable lazy loading by default
     
     this._init();
   }
@@ -15,30 +17,80 @@ export default class SplineClimbingWall extends Group {
     this._fadeInManager = fadeInManager;
   }
 
+  // 🔥 PERFORMANCE: Method to trigger Spline loading manually
+  loadSplineScene() {
+    if (!this._splineLoaded && this._shouldLazyLoad) {
+      console.log('🔥 Lazy loading Spline scene...');
+      this._shouldLazyLoad = false;
+      this._loadSplineContent();
+    }
+  }
+
   async _init() {
+    // Create background immediately (lightweight)
+    this._createBackground();
+    
+    // 🔥 PERFORMANCE: Only load Spline immediately if not using lazy loading
+    if (!this._shouldLazyLoad) {
+      await this._loadSplineContent();
+    } else {
+      // Create a simple placeholder
+      this._createPlaceholder();
+      console.log('🔥 Spline scene ready for lazy loading - call loadSplineScene() when needed');
+    }
+  }
+
+  _createBackground() {
+    // Create a moonlight night background div behind everything
+    this._backgroundDiv = document.createElement('div');
+    this._backgroundDiv.style.position = 'fixed';
+    this._backgroundDiv.style.top = '0';
+    this._backgroundDiv.style.left = '0';
+    this._backgroundDiv.style.width = '100%';
+    this._backgroundDiv.style.height = '100%';
+    // Darker moonlight gradient with more blue in dark areas
+    this._backgroundDiv.style.background = `
+      radial-gradient(ellipse at 70% 20%, rgba(20, 35, 60, 0.3) 0%, transparent 50%),
+      linear-gradient(180deg, 
+        #040812 0%, 
+        #0a0f1a 20%, 
+        #050a15 40%, 
+        #020510 70%, 
+        #000308 100%
+      )
+    `;
+    this._backgroundDiv.style.zIndex = '-2'; // Behind everything
+    
+    // Add moonlight background to DOM
+    document.body.appendChild(this._backgroundDiv);
+  }
+
+  _createPlaceholder() {
+    // Create a lightweight placeholder that shows immediately
+    this._placeholderDiv = document.createElement('div');
+    this._placeholderDiv.style.position = 'fixed';
+    this._placeholderDiv.style.top = '0';
+    this._placeholderDiv.style.left = '0';
+    this._placeholderDiv.style.width = '100%';
+    this._placeholderDiv.style.height = '100%';
+    this._placeholderDiv.style.background = 'rgba(10, 15, 26, 0.8)';
+    this._placeholderDiv.style.zIndex = '-1';
+    this._placeholderDiv.style.display = 'flex';
+    this._placeholderDiv.style.alignItems = 'center';
+    this._placeholderDiv.style.justifyContent = 'center';
+    this._placeholderDiv.style.color = '#ffffff';
+    this._placeholderDiv.style.fontSize = '18px';
+    this._placeholderDiv.style.fontFamily = 'Arial, sans-serif';
+    this._placeholderDiv.innerHTML = '🔥 Loading climbing environment...';
+    
+    document.body.appendChild(this._placeholderDiv);
+  }
+
+  async _loadSplineContent() {
     try {
-      // Create a moonlight night background div behind everything
-      this._backgroundDiv = document.createElement('div');
-      this._backgroundDiv.style.position = 'fixed';
-      this._backgroundDiv.style.top = '0';
-      this._backgroundDiv.style.left = '0';
-      this._backgroundDiv.style.width = '100%';
-      this._backgroundDiv.style.height = '100%';
-      // Darker moonlight gradient with more blue in dark areas
-      this._backgroundDiv.style.background = `
-        radial-gradient(ellipse at 70% 20%, rgba(20, 35, 60, 0.3) 0%, transparent 50%),
-        linear-gradient(180deg, 
-          #040812 0%, 
-          #0a0f1a 20%, 
-          #050a15 40%, 
-          #020510 70%, 
-          #000308 100%
-        )
-      `;
-      this._backgroundDiv.style.zIndex = '-2'; // Behind everything
-      
-      // Add moonlight background to DOM
-      document.body.appendChild(this._backgroundDiv);
+      // 🔥 PERFORMANCE: Detect device capabilities for optimization
+      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+      const isLowEnd = isMobile || navigator.hardwareConcurrency <= 4;
       
       // Create a canvas element for Spline
       this._canvas = document.createElement('canvas');
@@ -52,17 +104,72 @@ export default class SplineClimbingWall extends Group {
       this._canvas.style.zIndex = '-1'; // Behind the main canvas
       this._canvas.style.opacity = '0'; // Start hidden - will fade in when loaded
       
+      // 🔥 PERFORMANCE: Set canvas resolution based on device
+      if (isLowEnd) {
+        // Reduce canvas resolution on low-end devices
+        this._canvas.style.imageRendering = 'pixelated';
+        this._canvas.style.filter = 'contrast(1.1)'; // Slight contrast boost to compensate
+      }
+      
       // Add to DOM
       document.body.appendChild(this._canvas);
+      
+      // Hide placeholder when starting to load real content
+      if (this._placeholderDiv) {
+        this._placeholderDiv.style.opacity = '0.5';
+        this._placeholderDiv.innerHTML = '🔥 Loading 3D scene...';
+      }
       
       // Load Spline viewer dynamically
       const { Application } = await import('@splinetool/runtime');
       
-      // Initialize Spline application
+      // Initialize Spline application with performance settings
       this._splineApp = new Application(this._canvas);
-      // Add cache busting parameter to force fresh load
-      const cacheBreaker = Date.now();
-      await this._splineApp.load(`https://prod.spline.design/VaU21x4kIO7tSaXb/scene.splinecode?v=${cacheBreaker}`);
+      
+      // 🔥 PERFORMANCE: Configure Spline runtime for better performance
+      if (this._splineApp.setPixelRatio) {
+        // Reduce pixel ratio on low-end devices
+        const pixelRatio = isLowEnd ? Math.min(window.devicePixelRatio, 1.5) : window.devicePixelRatio;
+        this._splineApp.setPixelRatio(pixelRatio);
+        console.log('🔥 Spline pixel ratio set to:', pixelRatio);
+      }
+      
+      // 🔥 PERFORMANCE: Add compression and quality settings to URL
+      const baseUrl = 'https://prod.spline.design/VaU21x4kIO7tSaXb/scene.splinecode';
+      const performanceParams = new URLSearchParams({
+        // Cache busting
+        v: Date.now(),
+        // Quality settings for performance
+        quality: isLowEnd ? 'performance' : 'default',
+        // Compression settings
+        compression: 'true',
+        // Reduce geometry complexity on mobile
+        lod: isLowEnd ? 'low' : 'high'
+      });
+      
+      const optimizedUrl = `${baseUrl}?${performanceParams.toString()}`;
+      
+      console.log('🔥 Loading Spline with performance optimizations:', {
+        isMobile,
+        isLowEnd,
+        url: optimizedUrl
+      });
+      
+      // Load with timeout for better error handling
+      const loadPromise = this._splineApp.load(optimizedUrl);
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Spline load timeout')), 15000) // 15 second timeout
+      );
+      
+      await Promise.race([loadPromise, timeoutPromise]);
+      
+      this._splineLoaded = true;
+      
+      // Remove placeholder
+      if (this._placeholderDiv) {
+        this._placeholderDiv.remove();
+        this._placeholderDiv = null;
+      }
       
       console.log('🔥 Spline climbing wall loaded successfully!');
       
