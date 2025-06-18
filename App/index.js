@@ -236,8 +236,8 @@ export default class App {
     // Event Listeners
     this._initEvents();
 
-    // Run performance benchmark after initialization
-    setTimeout(() => this._runPerformanceBenchmark(), 2000);
+    // 🔥 PERFORMANCE BENCHMARK REMOVED FOR PRODUCTION
+    // setTimeout(() => this._runPerformanceBenchmark(), 2000); - REMOVED
 
     // Animation
     this._animate();
