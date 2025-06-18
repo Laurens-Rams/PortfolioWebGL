@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+    <meta name="description" content="ART's Interactive WebGL Portfolio - Immersive 3D Experience" />
+    <meta name="theme-color" content="#2a2a2a" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    
+    <!-- Preload critical assets -->
+    <link rel="preload" href="/space.glb" as="fetch" crossorigin="anonymous" />
+    <link rel="preload" href="/font-2.json" as="fetch" crossorigin="anonymous" />
+    
+    <title>ART's Portfolio - Interactive WebGL Experience</title>
+    <style>
+      body, html {
+        margin: 0;
+        padding: 0;
+        width: 100%;
+        height: 100%;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        color: white;
+        pointer-events: none; /* 🔥 FIX: Let clicks pass through to Spline canvas */
+   /* Ensure black background always */
+      }
+      body.no-scroll {
+       overflow: hidden;
+      }
+      #app {
+        width: 100%;
+        height: 340vh; /* Reduced scroll height for shorter climbing experience */
+        pointer-events: none; /* 🔥 FIX: Let clicks pass through to Spline canvas */
+      }
+      #canvas_main {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: 0;
+        opacity: 0; /* Start hidden - will fade in when character loads */
+      }
+
+      .three-perf-ui {
+        z-index: 100;
+      }
+
+      /* Simple fade-in system - no loading screen needed */
+      body.loading {
+        overflow: hidden; /* Lock scroll until everything loads */
+      }
+
+      /* Error Screen */
+      #error-screen {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: #2a2a2a;
+        display: none;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        z-index: 1001;
+        text-align: center;
+        padding: 20px;
+        box-sizing: border-box;
+      }
+
+      .error-title {
+        font-size: 24px;
+        margin-bottom: 20px;
+        color: #ff6b6b;
+      }
+
+      .error-message {
+        font-size: 16px;
+        margin-bottom: 30px;
+        opacity: 0.8;
+        max-width: 500px;
+        line-height: 1.5;
+      }
+
+      .retry-button {
+        background: #ffffff;
+        color: #2a2a2a;
+        border: none;
+        padding: 12px 24px;
+        border-radius: 6px;
+        font-size: 16px;
+        cursor: pointer;
+        transition: background-color 0.2s;
+      }
+
+      .retry-button:hover {
+        background: #f0f0f0;
+      }
+
+      /* Reduced motion support */
+      @media (prefers-reduced-motion: reduce) {
+        * {
+          animation-duration: 0.01ms !important;
+          animation-iteration-count: 1 !important;
+          transition-duration: 0.01ms !important;
+        }
+      }
+    </style>
+  </head>
+  <body class="loading">
+    <!-- No loading screen needed - simple fade-in system -->
+
+    <!-- Error Screen -->
+    <div id="error-screen">
+      <div class="error-title">Oops! Something went wrong</div>
+      <div class="error-message" id="error-message">
+        We're having trouble loading the 3D experience. This might be due to your device or browser not supporting WebGL.
+      </div>
+      <button class="retry-button" onclick="location.reload()">Try Again</button>
+    </div>
+
+    <div id="app">
+      <canvas id="canvas_main"></canvas>
+    </div>
+    <script type="module" src="/main.js"></script>
+  </body>
+</html>
