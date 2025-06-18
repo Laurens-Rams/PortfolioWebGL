@@ -132,8 +132,8 @@ export default class Tiles extends Group {
     // UI System
     this.uiVisible = false;
 
-    // FPS Counter
-    this._fpsDisplay = null;
+    // 🔥 FPS COUNTER REMOVED FOR PRODUCTION
+    // this._fpsDisplay = null;
     
     // Hover effect system - INSTANT for performance
     this._hoverEffectDiv = null;
@@ -199,18 +199,19 @@ export default class Tiles extends Group {
     if (DEBUG_MODE) {
       this._createDebugControls(); // Debug UI for animation selection
 
-      // FPS Display Element Creation
-      this._fpsDisplay = document.createElement('div');
-      this._fpsDisplay.style.position = 'fixed';
-      this._fpsDisplay.style.top = '10px';
-      this._fpsDisplay.style.right = '10px';
-      this._fpsDisplay.style.color = 'white';
-      this._fpsDisplay.style.background = 'rgba(0,0,0,0.7)';
-      this._fpsDisplay.style.padding = '5px 10px';
-      this._fpsDisplay.style.fontFamily = 'monospace';
-      this._fpsDisplay.style.fontSize = '14px'; // Readable size
-      this._fpsDisplay.style.zIndex = '1002'; // Ensure it's above other UI like debug panel
-      document.body.appendChild(this._fpsDisplay);
+      // 🔥 FPS DISPLAY REMOVED FOR PRODUCTION
+      // FPS Display Element Creation - REMOVED
+      // this._fpsDisplay = document.createElement('div');
+      // this._fpsDisplay.style.position = 'fixed';
+      // this._fpsDisplay.style.top = '10px';
+      // this._fpsDisplay.style.right = '10px';
+      // this._fpsDisplay.style.color = 'white';
+      // this._fpsDisplay.style.background = 'rgba(0,0,0,0.7)';
+      // this._fpsDisplay.style.padding = '5px 10px';
+      // this._fpsDisplay.style.fontFamily = 'monospace';
+      // this._fpsDisplay.style.fontSize = '14px'; // Readable size
+      // this._fpsDisplay.style.zIndex = '1002'; // Ensure it's above other UI like debug panel
+      // document.body.appendChild(this._fpsDisplay);
     }
     
     // Load standup animation - TEMPORARILY DISABLED
@@ -1023,10 +1024,11 @@ export default class Tiles extends Group {
   // REMOVED: _handlePortfolioCamera - camera now moves linearly, character positioning handled by animations
 
   update(deltaTime, mouseX, mouseY) {
-    if (DEBUG_MODE && this._fpsDisplay && deltaTime > 0) {
-      const fps = 1.0 / deltaTime;
-      this._fpsDisplay.textContent = `FPS: ${fps.toFixed(1)}`;
-    }
+    // 🔥 FPS DISPLAY UPDATE REMOVED FOR PRODUCTION
+    // if (DEBUG_MODE && this._fpsDisplay && deltaTime > 0) {
+    //   const fps = 1.0 / deltaTime;
+    //   this._fpsDisplay.textContent = `FPS: ${fps.toFixed(1)}`;
+    // }
 
     // Update hover effects
     this._updateHoverEffects(deltaTime);
@@ -1562,10 +1564,11 @@ export default class Tiles extends Group {
       this._debugPanel.style.display = this.uiVisible ? 'block' : 'none';
     }
     
-    // Toggle FPS display
-    if (this._fpsDisplay) { // Check if FPS display exists
-        this._fpsDisplay.style.display = this.uiVisible ? 'block' : 'none';
-    }
+    // 🔥 FPS DISPLAY TOGGLE REMOVED FOR PRODUCTION
+    // Toggle FPS display - REMOVED
+    // if (this._fpsDisplay) { // Check if FPS display exists
+    //     this._fpsDisplay.style.display = this.uiVisible ? 'block' : 'none';
+    // }
     
     // Toggle material controls panel
     if (this._materialPanel) {

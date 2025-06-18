@@ -13,7 +13,7 @@ import {
 } from 'three';
 
 import { DragGesture } from '@use-gesture/vanilla';
-import Stats from 'stats.js';
+// import Stats from 'stats.js'; // 🔥 REMOVED FOR PRODUCTION
 import * as dat from 'dat.gui';
 import Postprocessing from './Postprocessing';
 import { damp } from 'maath/easing';
@@ -117,24 +117,16 @@ export default class App {
     // 🔥 FADE-IN MANAGER REFERENCE
     this.fadeInManager = fadeInManager;
 
-    // Enhanced performance monitoring
-    this.frameCount = 0;
-    this.lastFPSCheck = performance.now();
-    this.currentFPS = 60;
-    this.frameTimeHistory = [];
-    this.maxFrameTimeHistory = 60; // Keep 60 frame times
-    this.renderStats = {
-      triangles: 0,
-      drawCalls: 0,
-      geometries: 0,
-      textures: 0,
-      culledObjects: 0,
-      visibleObjects: 0
-    };
-    
-    // Performance metrics display
-    this.performanceDisplay = null;
-    this.memoryMonitor = null;
+    // 🔥 PERFORMANCE MONITORING REMOVED FOR PRODUCTION
+    // Enhanced performance monitoring - REMOVED
+    // this.frameCount = 0;
+    // this.lastFPSCheck = performance.now();
+    // this.currentFPS = 60;
+    // this.frameTimeHistory = [];
+    // this.maxFrameTimeHistory = 60;
+    // this.renderStats = { ... };
+    // this.performanceDisplay = null;
+    // this.memoryMonitor = null;
 
     // UI visibility state
     this.uiVisible = false; // Hidden by default
@@ -217,14 +209,9 @@ export default class App {
     this._scene = new Scene();
     // this._scene.background = new Color(0x000000); // Black background
 
-    // Stats
-    if (this.debug) {
-      this._stats = new Stats();
-      document.body.appendChild(this._stats.dom);
-    }
-
-    // Always show performance metrics (not just in debug mode)
-    this._createPerformanceDisplay();
+    // 🔥 PERFORMANCE DISPLAY REMOVED FOR PRODUCTION
+    // Always show performance metrics (not just in debug mode) - REMOVED
+    // this._createPerformanceDisplay();
 
     // Always show light controls for easy adjustment (not just debug mode)
     // Light controls removed - post-processing controls only
@@ -520,122 +507,141 @@ export default class App {
     console.log('🔥 WebGL Performance - DPR:', dpr, 'Max DPR:', maxDPR, 'Device DPR:', window.devicePixelRatio);
   }
 
-  _createPerformanceDisplay() {
-    // Create performance display panel - HIDDEN BY DEFAULT
-    this.performanceDisplay = document.createElement('div');
-    this.performanceDisplay.style.cssText = `
-      position: fixed;
-      top: 10px;
-      right: 10px;
-      background: rgba(0, 0, 0, 0.8);
-      color: #00ff00;
-      padding: 10px;
-      font-family: 'Courier New', monospace;
-      font-size: 12px;
-      border-radius: 5px;
-      z-index: 10000;
-      min-width: 200px;
-      line-height: 1.4;
-      display: none;
-    `;
-    document.body.appendChild(this.performanceDisplay);
-    
-    // Initial content
-    this.performanceDisplay.innerHTML = `
-      <div style="color: #ffff00; font-weight: bold; margin-bottom: 5px;">🔥 PERFORMANCE METRICS</div>
-      <div id="perf-fps">FPS: --</div>
-      <div id="perf-frametime">Frame Time: -- ms</div>
-      <div id="perf-memory">Memory: -- MB</div>
-      <div id="perf-triangles">Triangles: --</div>
-      <div id="perf-drawcalls">Draw Calls: --</div>
-      <div id="perf-visible">Visible Objects: --</div>
-      <div id="perf-culled">Culled Objects: --</div>
-      <div id="perf-dpr">DPR: --</div>
-      <div id="perf-mode">Mode: --</div>
-    `;
-  }
+  _animate() {
+    // 🔥 PERFORMANCE MONITORING REMOVED FOR PRODUCTION
+    // const frameStart = performance.now();
+    // Enhanced FPS monitoring and adaptive quality - REMOVED
+    // this.frameCount++;
+    // const now = performance.now();
+    // if (now - this.lastFPSCheck >= 1000) { ... } - REMOVED
 
-  // Light controls deleted - using post-processing controls only
+    const delta = this._clock.getDelta();
+    
+    // 🔥 SIMPLIFIED FRAME SKIPPING - NO FPS DEPENDENCY
+    // Skip expensive updates occasionally for better performance
+    this.frameCount = (this.frameCount || 0) + 1;
+    const shouldSkipFrame = this.frameCount % 2 === 0; // Simple frame skipping
+    
+    if (this._tiles && !shouldSkipFrame) {
+      this._tiles.update(delta, this.normalizedMouseX, this.normalizedMouseY);
+    }
 
-  _updatePerformanceDisplay() {
-    if (!this.performanceDisplay) return;
-    
-    // Calculate average frame time
-    const avgFrameTime = this.frameTimeHistory.length > 0 
-      ? this.frameTimeHistory.reduce((a, b) => a + b, 0) / this.frameTimeHistory.length 
-      : 0;
-    
-    // Get memory usage (if available)
-    let memoryUsage = 'N/A';
-    if (performance.memory) {
-      memoryUsage = (performance.memory.usedJSHeapSize / 1024 / 1024).toFixed(1) + ' MB';
-    }
-    
-    // Update display
-    const fpsElement = document.getElementById('perf-fps');
-    const frameTimeElement = document.getElementById('perf-frametime');
-    const memoryElement = document.getElementById('perf-memory');
-    const trianglesElement = document.getElementById('perf-triangles');
-    const drawCallsElement = document.getElementById('perf-drawcalls');
-    const visibleElement = document.getElementById('perf-visible');
-    const culledElement = document.getElementById('perf-culled');
-    const dprElement = document.getElementById('perf-dpr');
-    const modeElement = document.getElementById('perf-mode');
-    
-    if (fpsElement) {
-      const fpsColor = this.currentFPS >= 50 ? '#00ff00' : this.currentFPS >= 30 ? '#ffff00' : '#ff0000';
-      fpsElement.innerHTML = `<span style="color: ${fpsColor}">FPS: ${this.currentFPS.toFixed(1)}</span>`;
-    }
-    
-    if (frameTimeElement) {
-      const frameTimeColor = avgFrameTime <= 16.67 ? '#00ff00' : avgFrameTime <= 33.33 ? '#ffff00' : '#ff0000';
-      frameTimeElement.innerHTML = `<span style="color: ${frameTimeColor}">Frame Time: ${avgFrameTime.toFixed(2)} ms</span>`;
-    }
-    
-    if (memoryElement) memoryElement.innerHTML = `Memory: ${memoryUsage}`;
-    if (trianglesElement) trianglesElement.innerHTML = `Triangles: ${this.renderStats.triangles.toLocaleString()}`;
-    if (drawCallsElement) drawCallsElement.innerHTML = `Draw Calls: ${this.renderStats.drawCalls}`;
-    if (visibleElement) visibleElement.innerHTML = `Visible Objects: ${this.renderStats.visibleObjects}`;
-    if (culledElement) culledElement.innerHTML = `Culled Objects: ${this.renderStats.culledObjects}`;
-    if (dprElement) dprElement.innerHTML = `DPR: ${this._gl.getPixelRatio().toFixed(2)}`;
-    if (modeElement) {
-      const mode = this._isLowEnd ? 'Low-End' : 'High-End';
-      const modeColor = this._isLowEnd ? '#ffff00' : '#00ff00';
-      modeElement.innerHTML = `<span style="color: ${modeColor}">Mode: ${mode}</span>`;
-    }
-  }
-
-  _collectRenderStats() {
-    // Reset stats
-    this.renderStats.triangles = 0;
-    this.renderStats.drawCalls = 0;
-    this.renderStats.geometries = 0;
-    this.renderStats.textures = 0;
-    this.renderStats.culledObjects = this.culledObjects.size;
-    this.renderStats.visibleObjects = 0;
-    
-    // Count scene objects
-    this._scene.traverse((object) => {
-      if (object.isMesh && object.geometry && object.visible) {
-        this.renderStats.drawCalls++;
-        this.renderStats.visibleObjects++;
-        
-        // Count triangles
-        if (object.geometry.index) {
-          this.renderStats.triangles += object.geometry.index.count / 3;
-        } else if (object.geometry.attributes.position) {
-          this.renderStats.triangles += object.geometry.attributes.position.count / 3;
-        }
+    if (this._climbingWall) {
+      this._climbingWall.update(delta);
+      // Pass mouse coordinates to Spline for mouse-based animations (throttled)
+      if (!shouldSkipFrame) {
+        this._climbingWall.updateMouse(this.normalizedMouseX, this.normalizedMouseY);
       }
-    });
+    }
+
+    // Update lighting transition based on scroll (performance optimized) - DISABLED FOR NOW
+    if (false && this._tiles && this._tiles._currentScrollOffset !== undefined && !shouldSkipFrame) {
+      this._updateLightingTransition(this._tiles._currentScrollOffset);
+    }
     
-    // Get WebGL render info
-    const info = this._gl.info;
-    if (info && info.render) {
-      this.renderStats.triangles = info.render.triangles || this.renderStats.triangles;
-      this.renderStats.drawCalls = info.render.calls || this.renderStats.drawCalls;
+    // Update UI overlay visibility based on scroll - SEPARATED FROM LIGHTING
+    if (this._tiles && this._tiles._currentScrollOffset !== undefined && !shouldSkipFrame) {
+      if (this.uiOverlay) {
+        this.uiOverlay.update(this._tiles._currentScrollOffset * 100); // Convert to percentage
+      }
+      
+      // 🔥 SCROLL-BASED EFFECTS REMOVED - NO LONGER NEEDED
+      
+      // 🔥 STORE CURRENT SCROLL POSITION IN STATE FOR PRESERVATION
+      this._currentScrollOffset = this._tiles._currentScrollOffset;
+    }
+
+    // 🔥 RENDER STATS REMOVED FOR PRODUCTION
+    // Collect render stats before rendering - REMOVED
+    // this._collectRenderStats();
+
+    // Advanced optimizations - frustum culling and LOD
+    const now = performance.now();
+    if (this.frustumCulling && now - this.lastCullCheck > this.cullCheckInterval) {
+      this._performFrustumCulling();
+      this.lastCullCheck = now;
+    }
+
+    // Only clear what's necessary
+    this._gl.clear(this._gl.DEPTH_BUFFER_BIT | this._gl.COLOR_BUFFER_BIT);
+
+    // Use postprocessing for enhanced effects
+    if (this.postprocessing) {
+      this.postprocessing.render(delta);
+    } else {
+      // Fallback to direct rendering
+      this._gl.render(this._scene, this._camera);
+    }
+
+    // 🔥 STATS REMOVED FOR PRODUCTION
+    // if (this.debug) {
+    //   this._stats.end();
+    // }
+    
+    // 🔥 FRAME TIME TRACKING REMOVED FOR PRODUCTION
+    // Calculate frame time and store in history - REMOVED
+    // const frameEnd = performance.now();
+    // const frameTime = frameEnd - frameStart;
+    // this.frameTimeHistory.push(frameTime);
+    // if (this.frameTimeHistory.length > this.maxFrameTimeHistory) {
+    //   this.frameTimeHistory.shift();
+    // }
+
+    // Camera rotation removed - using drag interaction instead
+
+    this._animationId = window.requestAnimationFrame(this._animate.bind(this));
+  }
+
+  // Add cleanup method for proper disposal
+  dispose() {
+    if (this._animationId) {
+      window.cancelAnimationFrame(this._animationId);
+    }
+    
+    // Clean up event listeners
+    window.removeEventListener('resize', this._resize.bind(this));
+    window.removeEventListener('mousemove', this._onMouseMove.bind(this));
+    // Note: keydown event listener cleanup would need to store the bound function reference
+    
+    // 🔥 PERFORMANCE DISPLAY CLEANUP REMOVED FOR PRODUCTION
+    // Clean up performance display - REMOVED
+    // if (this.performanceDisplay && this.performanceDisplay.parentNode) { ... }
+    
+    // Clean up light controls display
+    if (this.lightControlsDisplay && this.lightControlsDisplay.parentNode) {
+      this.lightControlsDisplay.parentNode.removeChild(this.lightControlsDisplay);
+    }
+    
+    // 🔥 PERFORMANCE SUMMARY REMOVED FOR PRODUCTION
+    // Log final performance summary - REMOVED
+    // console.log('🔥 Final Performance Summary:', { ... });
+    
+    // Dispose of WebGL resources
+    if (this._gl) {
+      this._gl.dispose();
+    }
+    
+    // Dispose of mixers
+    if (this._mixer) {
+      this._mixer.stopAllAction();
+      this._mixer.uncacheRoot(this._mixer.getRoot());
+    }
+    
+    if (this._tiles) {
+      this._tiles.dispose();
+    }
+
+    if (this._climbingWall) {
+      this._climbingWall.dispose();
+    }
+
+    if (this.uiOverlay) {
+      this.uiOverlay.dispose();
     }
   }
+
+  // 🔥 PERFORMANCE BENCHMARK REMOVED FOR PRODUCTION
+  // _runPerformanceBenchmark() { ... } - REMOVED
 
   _performFrustumCulling() {
     // Create frustum from camera
@@ -810,486 +816,6 @@ export default class App {
     }
   }
   
-  _animate() {
-    const frameStart = performance.now();
-    
-    // Enhanced FPS monitoring and adaptive quality
-    this.frameCount++;
-    const now = performance.now();
-    if (now - this.lastFPSCheck >= 1000) {
-      this.currentFPS = (this.frameCount * 1000) / (now - this.lastFPSCheck);
-      this.frameCount = 0;
-      this.lastFPSCheck = now;
-      
-      // Update performance display
-      this._updatePerformanceDisplay();
-      
-      // Adaptive quality based on FPS - more aggressive
-      if (this.currentFPS < 45 && !this._isLowEnd) {
-        this._isLowEnd = true;
-        this._setDPR();
-        console.log('🔥 Switching to low-end mode due to low FPS:', this.currentFPS);
-      } else if (this.currentFPS > 55 && this._isLowEnd && !this._isMobile) {
-        this._isLowEnd = false;
-        this._setDPR();
-        console.log('🔥 Switching back to high-end mode, FPS recovered:', this.currentFPS);
-      }
-    }
-
-    if (this.debug) {
-      this._stats.begin();
-    }
-
-    const delta = this._clock.getDelta();
-    
-    // Skip expensive updates on low FPS
-    const shouldSkipFrame = this.currentFPS < 30 && this.frameCount % 2 === 0;
-    
-    if (this._tiles && !shouldSkipFrame) {
-      this._tiles.update(delta, this.normalizedMouseX, this.normalizedMouseY);
-      
-      // Debug logging to verify mouse coordinates are being passed
-      if (Math.random() < 0.005) { // Log 0.5% of the time
-        console.log('🔥 Passing mouse to tiles:', { 
-          mouseX: this.normalizedMouseX?.toFixed(3), 
-          mouseY: this.normalizedMouseY?.toFixed(3)
-        });
-      }
-    }
-
-    if (this._climbingWall) {
-      this._climbingWall.update(delta);
-      // Pass mouse coordinates to Spline for mouse-based animations (throttled)
-      if (!shouldSkipFrame) {
-        this._climbingWall.updateMouse(this.normalizedMouseX, this.normalizedMouseY);
-      }
-    }
-
-    // Update lighting transition based on scroll (performance optimized) - DISABLED FOR NOW
-    if (false && this._tiles && this._tiles._currentScrollOffset !== undefined && !shouldSkipFrame) {
-      this._updateLightingTransition(this._tiles._currentScrollOffset);
-    }
-    
-    // Update UI overlay visibility based on scroll - SEPARATED FROM LIGHTING
-    if (this._tiles && this._tiles._currentScrollOffset !== undefined && !shouldSkipFrame) {
-      if (this.uiOverlay) {
-        this.uiOverlay.update(this._tiles._currentScrollOffset * 100); // Convert to percentage
-      }
-      
-      // 🔥 SCROLL-BASED EFFECTS REMOVED - NO LONGER NEEDED
-      
-      // 🔥 STORE CURRENT SCROLL POSITION IN STATE FOR PRESERVATION
-      this._currentScrollOffset = this._tiles._currentScrollOffset;
-    }
-
-    // Collect render stats before rendering
-    this._collectRenderStats();
-
-    // Advanced optimizations - frustum culling and LOD
-    if (this.frustumCulling && now - this.lastCullCheck > this.cullCheckInterval) {
-      this._performFrustumCulling();
-      this.lastCullCheck = now;
-    }
-
-    // Only clear what's necessary
-    this._gl.clear(this._gl.DEPTH_BUFFER_BIT | this._gl.COLOR_BUFFER_BIT);
-
-    // Use postprocessing for enhanced effects
-    if (this.postprocessing) {
-      this.postprocessing.render(delta);
-    } else {
-      // Fallback to direct rendering
-      this._gl.render(this._scene, this._camera);
-    }
-
-    if (this.debug) {
-      this._stats.end();
-    }
-    
-    // Calculate frame time and store in history
-    const frameEnd = performance.now();
-    const frameTime = frameEnd - frameStart;
-    this.frameTimeHistory.push(frameTime);
-    if (this.frameTimeHistory.length > this.maxFrameTimeHistory) {
-      this.frameTimeHistory.shift();
-    }
-
-    // Camera rotation removed - using drag interaction instead
-
-    this._animationId = window.requestAnimationFrame(this._animate.bind(this));
-  }
-
-  // Add cleanup method for proper disposal
-  dispose() {
-    if (this._animationId) {
-      window.cancelAnimationFrame(this._animationId);
-    }
-    
-    // Clean up event listeners
-    window.removeEventListener('resize', this._resize.bind(this));
-    window.removeEventListener('mousemove', this._onMouseMove.bind(this));
-    // Note: keydown event listener cleanup would need to store the bound function reference
-    
-    // Clean up performance display
-    if (this.performanceDisplay && this.performanceDisplay.parentNode) {
-      this.performanceDisplay.parentNode.removeChild(this.performanceDisplay);
-    }
-    
-    // Clean up light controls display
-    if (this.lightControlsDisplay && this.lightControlsDisplay.parentNode) {
-      this.lightControlsDisplay.parentNode.removeChild(this.lightControlsDisplay);
-    }
-    
-    // Log final performance summary
-    console.log('🔥 Final Performance Summary:', {
-      averageFPS: this.currentFPS.toFixed(1),
-      averageFrameTime: this.frameTimeHistory.length > 0 
-        ? (this.frameTimeHistory.reduce((a, b) => a + b, 0) / this.frameTimeHistory.length).toFixed(2) + 'ms'
-        : 'N/A',
-      finalMode: this._isLowEnd ? 'Low-End' : 'High-End',
-      finalDPR: this._gl.getPixelRatio().toFixed(2),
-      totalTriangles: this.renderStats.triangles.toLocaleString(),
-      totalDrawCalls: this.renderStats.drawCalls
-    });
-    
-    // Dispose of WebGL resources
-    if (this._gl) {
-      this._gl.dispose();
-    }
-    
-    // Dispose of mixers
-    if (this._mixer) {
-      this._mixer.stopAllAction();
-      this._mixer.uncacheRoot(this._mixer.getRoot());
-    }
-    
-    if (this._tiles) {
-      this._tiles.dispose();
-    }
-
-    if (this._climbingWall) {
-      this._climbingWall.dispose();
-    }
-
-    if (this.uiOverlay) {
-      this.uiOverlay.dispose();
-    }
-  }
-
-  _runPerformanceBenchmark() {
-    console.log('🔥 Running Performance Benchmark...');
-    
-    const benchmarkStart = performance.now();
-    let benchmarkFrames = 0;
-    const targetFrames = 60; // Test for 60 frames
-    
-    const benchmarkLoop = () => {
-      if (benchmarkFrames < targetFrames) {
-        // Force a render
-        this._gl.render(this._scene, this._camera);
-        benchmarkFrames++;
-        requestAnimationFrame(benchmarkLoop);
-      } else {
-        const benchmarkEnd = performance.now();
-        const benchmarkTime = benchmarkEnd - benchmarkStart;
-        const benchmarkFPS = (targetFrames * 1000) / benchmarkTime;
-        
-        // Performance analysis
-        let performanceGrade = 'A+';
-        let recommendations = [];
-        
-        if (benchmarkFPS < 30) {
-          performanceGrade = 'D';
-          recommendations.push('Consider reducing geometry complexity');
-          recommendations.push('Lower DPR settings recommended');
-          recommendations.push('Disable antialiasing');
-        } else if (benchmarkFPS < 45) {
-          performanceGrade = 'C';
-          recommendations.push('Consider optimizing lighting');
-          recommendations.push('Reduce particle count if any');
-        } else if (benchmarkFPS < 55) {
-          performanceGrade = 'B';
-          recommendations.push('Good performance, minor optimizations possible');
-        }
-        
-        // Device classification
-        let deviceClass = 'High-End';
-        if (this._isMobile) {
-          deviceClass = benchmarkFPS > 45 ? 'High-End Mobile' : 'Low-End Mobile';
-        } else {
-          deviceClass = benchmarkFPS > 55 ? 'High-End Desktop' : 'Low-End Desktop';
-        }
-        
-        console.log('🔥 Performance Benchmark Results:', {
-          benchmarkFPS: benchmarkFPS.toFixed(1),
-          benchmarkTime: benchmarkTime.toFixed(2) + 'ms',
-          performanceGrade,
-          deviceClass,
-          currentDPR: this._gl.getPixelRatio(),
-          recommendations: recommendations.length > 0 ? recommendations : ['Performance is excellent!']
-        });
-        
-        // Auto-optimize based on benchmark
-        if (benchmarkFPS < 40 && !this._isLowEnd) {
-          console.log('🔥 Auto-optimizing based on benchmark results...');
-          this._isLowEnd = true;
-          this._setDPR();
-        }
-      }
-    };
-    
-    requestAnimationFrame(benchmarkLoop);
-  }
-
-  _setupLightControlEvents() {
-    // Ambient Light Controls
-    const ambientIntensity = document.getElementById('ambient-intensity');
-    const ambientIntensityValue = document.getElementById('ambient-intensity-value');
-    
-    ambientIntensity.addEventListener('input', (e) => {
-      const value = parseFloat(e.target.value);
-      this._ambientLight.intensity = value;
-      ambientIntensityValue.textContent = value.toFixed(2);
-    });
-    
-    // Key Light Controls
-    const keyIntensity = document.getElementById('key-intensity');
-    const keyIntensityValue = document.getElementById('key-intensity-value');
-    const keyX = document.getElementById('key-x');
-    const keyXValue = document.getElementById('key-x-value');
-    const keyY = document.getElementById('key-y');
-    const keyYValue = document.getElementById('key-y-value');
-    const keyZ = document.getElementById('key-z');
-    const keyZValue = document.getElementById('key-z-value');
-    const keyDistance = document.getElementById('key-distance');
-    const keyDistanceValue = document.getElementById('key-distance-value');
-    const keyDecay = document.getElementById('key-decay');
-    const keyDecayValue = document.getElementById('key-decay-value');
-    
-    keyIntensity.addEventListener('input', (e) => {
-      const value = parseInt(e.target.value);
-      this._keyLight.intensity = value;
-      keyIntensityValue.textContent = value.toLocaleString();
-    });
-    
-    keyX.addEventListener('input', (e) => {
-      const value = parseInt(e.target.value);
-      this._keyLight.position.x = value;
-      keyXValue.textContent = value;
-    });
-    
-    keyY.addEventListener('input', (e) => {
-      const value = parseInt(e.target.value);
-      this._keyLight.position.y = value;
-      keyYValue.textContent = value;
-    });
-    
-    keyZ.addEventListener('input', (e) => {
-      const value = parseInt(e.target.value);
-      this._keyLight.position.z = value;
-      keyZValue.textContent = value;
-    });
-    
-    keyDistance.addEventListener('input', (e) => {
-      const value = parseInt(e.target.value);
-      this._keyLight.distance = value;
-      keyDistanceValue.textContent = value.toLocaleString();
-    });
-    
-    keyDecay.addEventListener('input', (e) => {
-      const value = parseFloat(e.target.value);
-      this._keyLight.decay = value;
-      keyDecayValue.textContent = value.toFixed(1);
-    });
-    
-    // Atmospheric Moonlight Controls
-    const moonIntensity = document.getElementById('moon-intensity');
-    const moonIntensityValue = document.getElementById('moon-intensity-value');
-    const moonX = document.getElementById('moon-x');
-    const moonXValue = document.getElementById('moon-x-value');
-    const moonY = document.getElementById('moon-y');
-    const moonYValue = document.getElementById('moon-y-value');
-    const moonZ = document.getElementById('moon-z');
-    const moonZValue = document.getElementById('moon-z-value');
-    const moonDistance = document.getElementById('moon-distance');
-    const moonDistanceValue = document.getElementById('moon-distance-value');
-    const moonDecay = document.getElementById('moon-decay');
-    const moonDecayValue = document.getElementById('moon-decay-value');
-    
-    moonIntensity.addEventListener('input', (e) => {
-      const value = parseInt(e.target.value);
-      this._moonLight.intensity = value;
-      moonIntensityValue.textContent = value.toLocaleString();
-    });
-    
-    moonX.addEventListener('input', (e) => {
-      const value = parseInt(e.target.value);
-      this._moonLight.position.x = value;
-      moonXValue.textContent = value;
-    });
-    
-    moonY.addEventListener('input', (e) => {
-      const value = parseInt(e.target.value);
-      this._moonLight.position.y = value;
-      moonYValue.textContent = value;
-    });
-    
-    moonZ.addEventListener('input', (e) => {
-      const value = parseInt(e.target.value);
-      this._moonLight.position.z = value;
-      moonZValue.textContent = value;
-    });
-    
-    moonDistance.addEventListener('input', (e) => {
-      const value = parseInt(e.target.value);
-      this._moonLight.distance = value;
-      moonDistanceValue.textContent = value.toLocaleString();
-    });
-    
-    moonDecay.addEventListener('input', (e) => {
-      const value = parseFloat(e.target.value);
-      this._moonLight.decay = value;
-      moonDecayValue.textContent = value.toFixed(1);
-    });
-    
-    // Preset Buttons
-    document.getElementById('preset-dramatic').addEventListener('click', () => {
-      this._applyLightPreset('dramatic');
-    });
-    
-    document.getElementById('preset-soft').addEventListener('click', () => {
-      this._applyLightPreset('soft');
-    });
-    
-    document.getElementById('preset-bright').addEventListener('click', () => {
-      this._applyLightPreset('bright');
-    });
-    
-    document.getElementById('preset-moody').addEventListener('click', () => {
-      this._applyLightPreset('moody');
-    });
-    
-    // Export Button
-    document.getElementById('export-values').addEventListener('click', () => {
-      this._exportLightValues();
-    });
-  }
-  
-  _applyLightPreset(preset) {
-    const presets = {
-      dramatic: {
-        ambient: 0.1,
-        keyIntensity: 35000,
-        keyPosition: { x: 1200, y: 1000, z: -800 },
-        keyDistance: 6000,
-        keyDecay: 1.8
-      },
-      soft: {
-        ambient: 0.4,
-        keyIntensity: 18000,
-        keyPosition: { x: 500, y: 500, z: -1200 },
-        keyDistance: 8000,
-        keyDecay: 1.0
-      },
-      bright: {
-        ambient: 0.6,
-        keyIntensity: 25000,
-        keyPosition: { x: 0, y: 800, z: -1000 },
-        keyDistance: 9000,
-        keyDecay: 1.2
-      },
-      moody: {
-        ambient: 0.05,
-        keyIntensity: 40000,
-        keyPosition: { x: -800, y: 400, z: -600 },
-        keyDistance: 5000,
-        keyDecay: 2.0
-      }
-    };
-    
-    const config = presets[preset];
-    if (!config) return;
-    
-    // Apply preset values
-    this._ambientLight.intensity = config.ambient;
-    
-    this._keyLight.intensity = config.keyIntensity;
-    this._keyLight.position.set(config.keyPosition.x, config.keyPosition.y, config.keyPosition.z);
-    this._keyLight.distance = config.keyDistance;
-    this._keyLight.decay = config.keyDecay;
-    
-    // Update UI values
-    document.getElementById('ambient-intensity').value = config.ambient;
-    document.getElementById('ambient-intensity-value').textContent = config.ambient.toFixed(1);
-    
-    document.getElementById('key-intensity').value = config.keyIntensity;
-    document.getElementById('key-intensity-value').textContent = config.keyIntensity.toLocaleString();
-    
-    document.getElementById('key-x').value = config.keyPosition.x;
-    document.getElementById('key-x-value').textContent = config.keyPosition.x;
-    
-    document.getElementById('key-y').value = config.keyPosition.y;
-    document.getElementById('key-y-value').textContent = config.keyPosition.y;
-    
-    document.getElementById('key-z').value = config.keyPosition.z;
-    document.getElementById('key-z-value').textContent = config.keyPosition.z;
-    
-    document.getElementById('key-distance').value = config.keyDistance;
-    document.getElementById('key-distance-value').textContent = config.keyDistance.toLocaleString();
-    
-    document.getElementById('key-decay').value = config.keyDecay;
-    document.getElementById('key-decay-value').textContent = config.keyDecay.toFixed(1);
-    
-    console.log(`🔥 Applied ${preset} lighting preset!`);
-  }
-  
-  _exportLightValues() {
-    const values = {
-      ambient: {
-        intensity: this._ambientLight.intensity
-      },
-      keyLight: {
-        intensity: this._keyLight.intensity,
-        position: {
-          x: this._keyLight.position.x,
-          y: this._keyLight.position.y,
-          z: this._keyLight.position.z
-        },
-        distance: this._keyLight.distance,
-        decay: this._keyLight.decay
-      }
-    };
-    
-    console.log('🔥 CURRENT LIGHT VALUES:');
-    console.log('Copy this to your code:');
-    console.log(`
-// Ambient Light
-al.intensity = ${values.ambient.intensity};
-
-// Key Light  
-this._keyLight.intensity = ${values.keyLight.intensity};
-this._keyLight.position.set(${values.keyLight.position.x}, ${values.keyLight.position.y}, ${values.keyLight.position.z});
-this._keyLight.distance = ${values.keyLight.distance};
-this._keyLight.decay = ${values.keyLight.decay};
-    `);
-    
-    // Also copy to clipboard if possible
-    if (navigator.clipboard) {
-      const codeText = `// Ambient Light
-al.intensity = ${values.ambient.intensity};
-
-// Key Light  
-this._keyLight.intensity = ${values.keyLight.intensity};
-this._keyLight.position.set(${values.keyLight.position.x}, ${values.keyLight.position.y}, ${values.keyLight.position.z});
-this._keyLight.distance = ${values.keyLight.distance};
-this._keyLight.decay = ${values.keyLight.decay};`;
-      
-      navigator.clipboard.writeText(codeText).then(() => {
-        console.log('🔥 Light values copied to clipboard!');
-      });
-    }
-  }
-
   _toggleUIControls() {
     // Toggle visibility of debug controls ONLY
     const debugElements = [

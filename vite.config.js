@@ -12,7 +12,7 @@ export default defineConfig({
           'three': ['three'],
           'postprocessing': ['postprocessing'],
           'drei': ['@react-three/drei'],
-          'vendor': ['@use-gesture/vanilla', 'dat.gui', 'stats.js', 'maath']
+          'vendor': ['@use-gesture/vanilla', 'dat.gui', 'maath']
         }
       }
     },

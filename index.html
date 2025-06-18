@@ -7,11 +7,12 @@
     <meta name="description" content="ART's Interactive WebGL Portfolio - Immersive 3D Experience" />
     <meta name="theme-color" content="#2a2a2a" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     
-    <!-- Preload critical assets -->
-    <link rel="preload" href="/space.glb" as="fetch" crossorigin="anonymous" />
-    <link rel="preload" href="/font-2.json" as="fetch" crossorigin="anonymous" />
+    <!-- Preload critical assets with proper resource hints -->
+    <link rel="prefetch" href="/space.glb" />
+    <link rel="prefetch" href="/font-2.json" />
     
     <title>ART's Portfolio - Interactive WebGL Experience</title>
     <style>
