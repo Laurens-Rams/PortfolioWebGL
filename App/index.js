@@ -469,12 +469,6 @@ export default class App {
     
     // Create shader-based starfield for performance
     this._climbingWall.createShaderStarfield(this._scene);
-    
-    // 🔥 PERFORMANCE: Trigger Spline loading after character loads (lazy loading)
-    setTimeout(() => {
-      console.log('🔥 Triggering Spline lazy load after character initialization...');
-      this._climbingWall.loadSplineScene();
-    }, 2000); // Load Spline 2 seconds after app starts
 
     // Initialize UI Overlay for text components
     this.uiOverlay = new UIOverlay(this);

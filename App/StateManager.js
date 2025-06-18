@@ -251,7 +251,7 @@ class AppStateManager {
     this.emit('fadeOutUI');
     
     // Wait for fade
-    await this.wait(800); // 🔥 SLOWER CINEMATIC FADE
+    await this.wait(300); // 🔥 FASTER FADE: Match the 0.3s character transition
     
     // Hide WebGL completely first
     this.setState({

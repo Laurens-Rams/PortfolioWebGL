@@ -8,7 +8,6 @@ export default class SplineClimbingWall extends Group {
     this._isVisible = true;
     this._fadeInManager = null;
     this._splineLoaded = false;
-    this._shouldLazyLoad = true; // 🔥 Enable lazy loading by default
     
     this._init();
   }
@@ -17,27 +16,12 @@ export default class SplineClimbingWall extends Group {
     this._fadeInManager = fadeInManager;
   }
 
-  // 🔥 PERFORMANCE: Method to trigger Spline loading manually
-  loadSplineScene() {
-    if (!this._splineLoaded && this._shouldLazyLoad) {
-      console.log('🔥 Lazy loading Spline scene...');
-      this._shouldLazyLoad = false;
-      this._loadSplineContent();
-    }
-  }
-
   async _init() {
     // Create background immediately (lightweight)
     this._createBackground();
     
-    // 🔥 PERFORMANCE: Only load Spline immediately if not using lazy loading
-    if (!this._shouldLazyLoad) {
-      await this._loadSplineContent();
-    } else {
-      // Create a simple placeholder
-      this._createPlaceholder();
-      console.log('🔥 Spline scene ready for lazy loading - call loadSplineScene() when needed');
-    }
+    // 🔥 LOAD SPLINE IMMEDIATELY - NO LAZY LOADING
+    await this._loadSplineContent();
   }
 
   _createBackground() {
@@ -63,27 +47,6 @@ export default class SplineClimbingWall extends Group {
     
     // Add moonlight background to DOM
     document.body.appendChild(this._backgroundDiv);
-  }
-
-  _createPlaceholder() {
-    // Create a lightweight placeholder that shows immediately
-    this._placeholderDiv = document.createElement('div');
-    this._placeholderDiv.style.position = 'fixed';
-    this._placeholderDiv.style.top = '0';
-    this._placeholderDiv.style.left = '0';
-    this._placeholderDiv.style.width = '100%';
-    this._placeholderDiv.style.height = '100%';
-    this._placeholderDiv.style.background = 'rgba(10, 15, 26, 0.8)';
-    this._placeholderDiv.style.zIndex = '-1';
-    this._placeholderDiv.style.display = 'flex';
-    this._placeholderDiv.style.alignItems = 'center';
-    this._placeholderDiv.style.justifyContent = 'center';
-    this._placeholderDiv.style.color = '#ffffff';
-    this._placeholderDiv.style.fontSize = '18px';
-    this._placeholderDiv.style.fontFamily = 'Arial, sans-serif';
-    this._placeholderDiv.innerHTML = '🔥 Loading climbing environment...';
-    
-    document.body.appendChild(this._placeholderDiv);
   }
 
   async _loadSplineContent() {
@@ -113,12 +76,6 @@ export default class SplineClimbingWall extends Group {
       
       // Add to DOM
       document.body.appendChild(this._canvas);
-      
-      // Hide placeholder when starting to load real content
-      if (this._placeholderDiv) {
-        this._placeholderDiv.style.opacity = '0.5';
-        this._placeholderDiv.innerHTML = '🔥 Loading 3D scene...';
-      }
       
       // Load Spline viewer dynamically
       const { Application } = await import('@splinetool/runtime');
@@ -164,12 +121,6 @@ export default class SplineClimbingWall extends Group {
       await Promise.race([loadPromise, timeoutPromise]);
       
       this._splineLoaded = true;
-      
-      // Remove placeholder
-      if (this._placeholderDiv) {
-        this._placeholderDiv.remove();
-        this._placeholderDiv = null;
-      }
       
       console.log('🔥 Spline climbing wall loaded successfully!');
       

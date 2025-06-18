@@ -89,10 +89,10 @@ export class TransitionController {
   
   // WebGL fade effects
   fadeOutWebGL() {
-    console.log('🔥 FADE OUT WebGL - character control delegated to StateManager');
+    console.log('🔥 FADE OUT WebGL - FAST character fade for case study');
     
     if (this.webglCanvas) {
-      this.webglCanvas.style.transition = 'opacity 0.8s ease';
+      this.webglCanvas.style.transition = 'opacity 0.3s ease'; // 🔥 MUCH FASTER: 0.8s → 0.3s
       this.webglCanvas.style.opacity = '0';
     }
     
