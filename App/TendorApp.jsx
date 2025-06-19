@@ -41,7 +41,7 @@ const AppContainer = styled.div`
 const BackButton = styled.button`
   position: fixed;
   top: 40px;
-  left: calc(50% - 720px + 120px);
+  left: calc(50% - 720px + 120px - 20px); /* Align "Back" text with H2 text position */
   background: none;
   border: none;
   font-family: 'ABC Repro', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
@@ -58,12 +58,13 @@ const BackButton = styled.button`
     opacity: 0.7;
   }
   
+  /* Match Container responsive behavior exactly */
   @media (max-width: calc(1440px + 240px)) {
-    left: calc(50% - 50vw + 60px);
+    left: calc(50% - 50vw + 60px - 20px); /* Match Container tablet margins */
   }
   
   @media (max-width: 767px) {
-    left: 20px;
+    left: 0px; /* Match Container mobile margins (20px - 20px offset) */
   }
 `;
 
@@ -399,6 +400,7 @@ const ColorGrid = styled.div`
   gap: 16px;
   align-items: center;
   flex-wrap: wrap;
+  justify-content: space-between; /* Space between main colors and accent colors */
 `;
 
 const ColorPill = styled.div`
@@ -417,7 +419,7 @@ const ColorPill = styled.div`
       case 'large': return '120px';
       case 'medium': return '100px';
       case 'small': return '80px';
-      case 'accent': return '40px';
+      case 'accent': return '80px'; /* Increased width for hover effect space */
       default: return '80px';
     }
   }};
@@ -600,8 +602,8 @@ const SectionWidthVideo = styled.video`
   height: auto;
   border-radius: 8px;
   display: block;
-  margin: ${spacing.textToMedia} 0;
-  grid-column: 1 / -1; /* Span both columns */
+  margin: -20px 0 ${spacing.fullWidthGap} 0; /* Less margin top, more margin bottom */
+  grid-column: 1 / -1; /* Span both columns for full section width */
 `;
 
 const TypographyShowcase = styled.div`
@@ -672,6 +674,7 @@ const TkCircle = styled.div`
   height: 8.8rem;
   border: 4px solid #000000;
   border-radius: 50%;
+  background-color: rgba(128, 128, 128, 0.2); /* Light grey background with low alpha */
   z-index: 15;
   
   @media (max-width: 768px) {
@@ -1444,7 +1447,7 @@ function App() {
                   ref={videoRef}
                   width="100%" 
                   height="auto" 
-                  autoPlay 
+                  autoPlay
                   loop 
                   muted 
                   playsInline
@@ -1489,38 +1492,42 @@ function App() {
                 <GradientHoverLeft>#0C9181</GradientHoverLeft>
                 <GradientHoverRight>#16514D</GradientHoverRight>
                 <ColorGrid>
-                  <ColorPill color="#DE501B" size="large">
-                    <ColorText>CTA</ColorText>
-                    <ColorHoverText>#DE501B</ColorHoverText>
-                  </ColorPill>
-                  <ColorPill color="#010C0B" size="large">
-                    <ColorText $isLight={false}>TEXT</ColorText>
-                    <ColorHoverText $isLight={false}>#010C0B</ColorHoverText>
-                  </ColorPill>
-                  <ColorPill color="#00C9AB" size="medium">
-                    <ColorText $isLight={false}>SUCCESS</ColorText>
-                    <ColorHoverText $isLight={false}>#00C9AB</ColorHoverText>
-                  </ColorPill>
-                  <ColorPill color="#F1FBFA" size="small" $isLight>
-                    <ColorText $isLight>FAIL</ColorText>
-                    <ColorHoverText $isLight>#F1FBFA</ColorHoverText>
-                  </ColorPill>
-                  <ColorPill color="#751FEC" size="accent">
-                    <ColorText $isLight={false}></ColorText>
-                    <ColorHoverText $isLight={false}>#751FEC</ColorHoverText>
-                  </ColorPill>
-                  <ColorPill color="#DE091A" size="accent">
-                    <ColorText $isLight={false}></ColorText>
-                    <ColorHoverText $isLight={false}>#DE091A</ColorHoverText>
-                  </ColorPill>
-                  <ColorPill color="#D81BDE" size="accent">
-                    <ColorText $isLight={false}></ColorText>
-                    <ColorHoverText $isLight={false}>#D81BDE</ColorHoverText>
-                  </ColorPill>
-                  <ColorPill color="#DE501B" size="accent">
-                    <ColorText $isLight={false}></ColorText>
-                    <ColorHoverText $isLight={false}>#DE501B</ColorHoverText>
-                  </ColorPill>
+                  <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
+                    <ColorPill color="#DE501B" size="large">
+                      <ColorText>CTA</ColorText>
+                      <ColorHoverText>#DE501B</ColorHoverText>
+                    </ColorPill>
+                    <ColorPill color="#010C0B" size="large">
+                      <ColorText $isLight={false}>TEXT</ColorText>
+                      <ColorHoverText $isLight={false}>#010C0B</ColorHoverText>
+                    </ColorPill>
+                    <ColorPill color="#00C9AB" size="medium">
+                      <ColorText $isLight={false}>SUCCESS</ColorText>
+                      <ColorHoverText $isLight={false}>#00C9AB</ColorHoverText>
+                    </ColorPill>
+                    <ColorPill color="#F1FBFA" size="small" $isLight>
+                      <ColorText $isLight>FAIL</ColorText>
+                      <ColorHoverText $isLight>#F1FBFA</ColorHoverText>
+                    </ColorPill>
+                  </div>
+                  <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
+                    <ColorPill color="#751FEC" size="accent">
+                      <ColorText $isLight={false}></ColorText>
+                      <ColorHoverText $isLight={false}>#751FEC</ColorHoverText>
+                    </ColorPill>
+                    <ColorPill color="#DE091A" size="accent">
+                      <ColorText $isLight={false}></ColorText>
+                      <ColorHoverText $isLight={false}>#DE091A</ColorHoverText>
+                    </ColorPill>
+                    <ColorPill color="#D81BDE" size="accent">
+                      <ColorText $isLight={false}></ColorText>
+                      <ColorHoverText $isLight={false}>#D81BDE</ColorHoverText>
+                    </ColorPill>
+                    <ColorPill color="#DE501B" size="accent">
+                      <ColorText $isLight={false}></ColorText>
+                      <ColorHoverText $isLight={false}>#DE501B</ColorHoverText>
+                    </ColorPill>
+                  </div>
                 </ColorGrid>
               </ColorInnerContainer>
             </ColorContainer>
@@ -1731,10 +1738,10 @@ function App() {
               <video 
                 width="100%" 
                 height="auto" 
-                controls 
                 loop 
                 muted 
                 playsInline
+                autoPlay
                 style={{ borderRadius: '8px', display: 'block', marginTop: spacing.fullWidthGap, marginBottom: spacing.fullWidthGap }}
               >
                 <source src="/tendor-assets/tendor-t1.mp4" type="video/mp4" />
@@ -1753,12 +1760,12 @@ function App() {
             </SectionContent>
             <SectionWidthVideo 
               ref={alexVideoRef}
-              controls 
+              controls
               loop 
               muted 
               playsInline
             >
-              <source src="/tendor-assets/TENDOR/FreeSOLO.mp4" type="video/mp4" />
+              <source src="/tendor-assets/FreeSOLO.mp4" type="video/mp4" />
               Your browser does not support the video tag.
             </SectionWidthVideo>
           </SectionGrid>
