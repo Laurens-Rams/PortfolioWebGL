@@ -88,7 +88,194 @@ class FadeInManager {
       // Unlock scroll
       document.body.classList.remove('loading');
       console.log('🔥 All components loaded - scroll unlocked');
+      
+      // 🔥 START SMART PRELOADING AFTER EVERYTHING IS READY
+      this.startSmartPreloading();
     }
+  }
+
+  // 🔥 SMART PRELOADING SYSTEM
+  startSmartPreloading() {
+    // Wait 3 seconds after everything loads to ensure smooth experience
+    setTimeout(() => {
+      console.log('🔥 Starting smart preloading of TENDOR assets...');
+      this.preloadTendorAssets();
+    }, 3000);
+  }
+
+  preloadTendorAssets() {
+    // Critical assets to preload (largest/most important)
+    const criticalAssets = [
+      // Videos (largest files)
+      '/tendor-assets/FreeSOLO.mp4',
+      '/tendor-assets/tendor-t1.mp4',
+      '/tendor-assets/LOGO.mp4',
+      
+      // Large images
+      '/tendor-assets/appSCREENS.png',
+      '/tendor-assets/TENDOR/TENDOR13.png',
+      '/tendor-assets/TENDOR/TENDOR9.png',
+      '/tendor-assets/TENDOR/TENDOR1.png',
+      '/tendor-assets/Editorial.png',
+      
+      // UI components
+      '/Social.png',
+      '/Comp1.png',
+      '/Comp2.png',
+      '/Icons.png'
+    ];
+
+    // Secondary assets (smaller, less critical)
+    const secondaryAssets = [
+      '/tendor-assets/TENDOR/TENDOR10.png',
+      '/tendor-assets/TENDOR/TENDOR11.png',
+      '/tendor-assets/TENDOR/TENDOR12.png',
+      '/tendor-assets/TENDOR/TENDOR14.png',
+      '/tendor-assets/TENDOR/TENDOR17.png',
+      '/tendor-assets/TENDOR/Slider1.png',
+      '/tendor-assets/TENDOR/Slider2.png',
+      '/tendor-assets/TENDOR/Slider3.png',
+      '/tendor-assets/TENDOR/Slider4.png',
+      '/tendor-assets/TENDOR/Slider5.png',
+      '/tendor-assets/TENDOR/Slider6.png'
+    ];
+
+    // Track preloading progress
+    this.preloadingStats = {
+      total: criticalAssets.length + secondaryAssets.length,
+      loaded: 0,
+      startTime: Date.now()
+    };
+
+    // Create subtle preload indicator (optional - can be removed)
+    this.createPreloadIndicator();
+
+    // Preload critical assets first (with throttling)
+    this.preloadAssetList(criticalAssets, 'critical').then(() => {
+      console.log('🔥 Critical TENDOR assets preloaded');
+      
+      // Then preload secondary assets (more aggressively throttled)
+      this.preloadAssetList(secondaryAssets, 'secondary').then(() => {
+        const duration = ((Date.now() - this.preloadingStats.startTime) / 1000).toFixed(1);
+        console.log(`🔥 All TENDOR assets preloaded in ${duration}s - instant case study loading ready!`);
+        this.removePreloadIndicator();
+      });
+    });
+  }
+
+  createPreloadIndicator() {
+    // Create a subtle indicator in bottom-right corner
+    this.preloadIndicator = document.createElement('div');
+    this.preloadIndicator.style.cssText = `
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background: rgba(0, 201, 171, 0.9);
+      color: white;
+      padding: 8px 12px;
+      border-radius: 20px;
+      font-family: 'ABC Repro', sans-serif;
+      font-size: 12px;
+      font-weight: 600;
+      z-index: 1000;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+      pointer-events: none;
+      backdrop-filter: blur(10px);
+    `;
+    this.preloadIndicator.textContent = 'Preloading case study...';
+    document.body.appendChild(this.preloadIndicator);
+    
+    // Fade in after a short delay
+    setTimeout(() => {
+      this.preloadIndicator.style.opacity = '1';
+    }, 100);
+  }
+
+  removePreloadIndicator() {
+    if (this.preloadIndicator) {
+      this.preloadIndicator.style.opacity = '0';
+      setTimeout(() => {
+        if (this.preloadIndicator && this.preloadIndicator.parentNode) {
+          this.preloadIndicator.parentNode.removeChild(this.preloadIndicator);
+        }
+      }, 300);
+    }
+  }
+
+  updatePreloadProgress() {
+    this.preloadingStats.loaded++;
+    const progress = Math.round((this.preloadingStats.loaded / this.preloadingStats.total) * 100);
+    
+    if (this.preloadIndicator) {
+      this.preloadIndicator.textContent = `Preloading case study... ${progress}%`;
+    }
+    
+    console.log(`🔥 Preload progress: ${this.preloadingStats.loaded}/${this.preloadingStats.total} (${progress}%)`);
+  }
+
+  async preloadAssetList(assetList, priority = 'normal') {
+    const concurrency = priority === 'critical' ? 2 : 1; // Limit concurrent downloads
+    const delay = priority === 'critical' ? 500 : 1000; // Delay between batches
+
+    for (let i = 0; i < assetList.length; i += concurrency) {
+      const batch = assetList.slice(i, i + concurrency);
+      
+      // Preload batch
+      await Promise.allSettled(
+        batch.map(url => this.preloadSingleAsset(url))
+      );
+
+      // Wait between batches to avoid overwhelming the browser
+      if (i + concurrency < assetList.length) {
+        await new Promise(resolve => setTimeout(resolve, delay));
+      }
+    }
+  }
+
+  preloadSingleAsset(url) {
+    return new Promise((resolve, reject) => {
+      // Use requestIdleCallback to preload during idle time
+      const preloadDuringIdle = () => {
+        if (url.endsWith('.mp4')) {
+          // Preload video
+          const video = document.createElement('video');
+          video.preload = 'metadata'; // Just metadata, not full video
+          video.oncanplaythrough = () => {
+            console.log(`🔥 Video preloaded: ${url}`);
+            this.updatePreloadProgress();
+            resolve();
+          };
+          video.onerror = (error) => {
+            console.warn(`🔥 Failed to preload video: ${url}`, error);
+            this.updatePreloadProgress(); // Still count it to avoid hanging
+            resolve(); // Don't reject - continue with other assets
+          };
+          video.src = url;
+        } else {
+          // Preload image
+          const img = new Image();
+          img.onload = () => {
+            console.log(`🔥 Image preloaded: ${url}`);
+            this.updatePreloadProgress();
+            resolve();
+          };
+          img.onerror = (error) => {
+            console.warn(`🔥 Failed to preload image: ${url}`, error);
+            this.updatePreloadProgress(); // Still count it to avoid hanging
+            resolve(); // Don't reject - continue with other assets
+          };
+          img.src = url;
+        }
+      };
+
+      // Use idle callback if available, otherwise use timeout
+      if ('requestIdleCallback' in window) {
+        requestIdleCallback(preloadDuringIdle, { timeout: 5000 });
+      } else {
+        setTimeout(preloadDuringIdle, 100);
+      }
+    });
   }
 }
 
