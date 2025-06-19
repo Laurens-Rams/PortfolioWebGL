@@ -1,3 +1,6 @@
+// 🔥 COMING SOON TOGGLE - SET TO false WHEN READY TO LAUNCH
+const COMING_SOON = true;
+
 import { DragGesture } from '@use-gesture/vanilla';
 import React from 'react';
 import ReactDOM from 'react-dom/client';
@@ -28,8 +31,79 @@ function showError(message) {
 // Expose error function globally
 window.showError = showError;
 
+// 🔥 COMING SOON SCREEN
+function showComingSoon() {
+  // Hide any existing content
+  document.body.innerHTML = '';
+  
+  // Create coming soon screen
+  const comingSoonScreen = document.createElement('div');
+  comingSoonScreen.style.cssText = `
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 50%, #16213e 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  `;
+  
+  // Add moon background effect
+  const moonBg = document.createElement('div');
+  moonBg.style.cssText = `
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 300px;
+    height: 300px;
+    background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 30%, transparent 70%);
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+  `;
+  
+  // Add coming soon text
+  const comingSoonText = document.createElement('div');
+  comingSoonText.textContent = 'COMING SOON';
+  comingSoonText.style.cssText = `
+    font-size: 3rem;
+    font-weight: 300;
+    color: #ffffff;
+    letter-spacing: 0.5rem;
+    text-align: center;
+    z-index: 1;
+    position: relative;
+    opacity: 0;
+    animation: fadeIn 2s ease-out forwards;
+  `;
+  
+  // Add fade in animation
+  const style = document.createElement('style');
+  style.textContent = `
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  `;
+  document.head.appendChild(style);
+  
+  // Assemble the screen
+  comingSoonScreen.appendChild(moonBg);
+  comingSoonScreen.appendChild(comingSoonText);
+  document.body.appendChild(comingSoonScreen);
+}
+
 // Initialize the application
 async function initApp() {
+  // 🔥 CHECK COMING SOON FLAG FIRST
+  if (COMING_SOON) {
+    showComingSoon();
+    return;
+  }
   try {
     // Check WebGL support
     if (!checkWebGLSupport()) {
