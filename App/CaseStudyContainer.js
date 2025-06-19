@@ -349,7 +349,7 @@ class CaseStudyContainer {
     
     console.log('🔥 Container now behaves like full page');
   }
-
+  
   // Cleanup
   dispose() {
     if (this.reactRoot && this.reactRoot.unmount) {

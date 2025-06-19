@@ -48,7 +48,7 @@ async function initApp() {
     
     // 🔥 MAKE APP AND STATE AVAILABLE GLOBALLY FOR BUTTON CLICKS
     window.app = app;
-    
+
     // Import and set up state manager
     const { default: appState } = await import('./App/StateManager.js');
     window.appState = appState;

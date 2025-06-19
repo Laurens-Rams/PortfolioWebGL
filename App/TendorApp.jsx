@@ -590,11 +590,6 @@ const ContactLink = styled.a`
     opacity: 0.7;
     transform: translateY(-2px);
   }
-  
-  span {
-    display: inline-block;
-    transition: transform 0.3s ease;
-  }
 `;
 
 const SectionWidthVideo = styled.video`
@@ -905,33 +900,23 @@ const ExpandableSection = styled.div`
 `;
 
 const ExpandButton = styled.button`
-  background: #f8f8f8;
-  color: #333333;
-  border: 1px solid #d0d0d0;
-  padding: 10px 20px;
-  border-radius: 8px;
+  background: none;
+  color: #000000;
+  border: none;
+  padding: 0;
   font-family: 'ABC Repro', sans-serif;
-  font-size: 0.875rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
+  font-size: 1.125rem;
+  font-weight: 400;
+  letter-spacing: 0.01em;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.3s ease;
   margin: ${spacing.textToMedia} 0 6px 0;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  display: inline-block;
+  text-decoration: none;
   
   &:hover {
-    background: #f0f0f0;
-    color: #222222;
-    border-color: #b8b8b8;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
-    transform: translateY(-1px);
-  }
-  
-  &:active {
-    background: #e8e8e8;
-    transform: translateY(0);
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+    opacity: 0.7;
+    transform: translateY(-2px);
   }
 `;
 
@@ -1399,7 +1384,7 @@ function App() {
               <BodyText>So I shaped TENDOR around a different goal: smart, personalized support for real climbers. Not a workout log but more like a coach who gets you.</BodyText>
               
               <ExpandButton onClick={() => setIsPersonalStoryExpanded(!isPersonalStoryExpanded)}>
-                {isPersonalStoryExpanded ? 'Hide Personal Story' : 'Read My Personal Story'}
+                {isPersonalStoryExpanded ? 'Hide Personal Story' : 'Read My Personal Story'} <span style={{display: 'inline-block', transition: 'transform 0.3s ease'}}>↗</span>
               </ExpandButton>
             </SectionContent>
           </SectionGrid>
@@ -1477,7 +1462,7 @@ function App() {
 
           <SectionGrid>
             <SectionLabel>
-              <H2>Turquoise to cut through the sea of black and earth tones dominating climbing apps</H2>
+              <H2>Turquoise to cut through the black and earth tones dominating climbing apps</H2>
             </SectionLabel>
             <SectionContent>
               <BodyText>Turquoise? Yeah, it's bold. But that was the point I picked turquoise because it cuts through the usual black and earth tones you see in climbing. It's fresh, it feels tech-forward, and it quietly connects both nature (green) and innovation (blue). In user testing, climbers said turquoise makes them feel focused, confident, and "ready to send." That's exactly the energy we want them to feel.</BodyText>
@@ -1571,7 +1556,7 @@ function App() {
 
           <SectionGrid>
             <SectionLabel>
-              <H2>Climbers don't need more apps. They need the right one. So I designed a UI based on their behavior, not assumptions.</H2>
+              <H2>Climbers need the right app, not more apps. I designed based on their behavior, not assumptions.</H2>
             </SectionLabel>
             <SectionContent>
               <BodyText>To build something climbers actually wanted, I spent time talking to people at gyms—from weekend warriors just starting out to performance climbers pushing their limits. What I found was two distinct groups with different needs but the same underlying desire: they all wanted to get better and connect with others who shared their passion.</BodyText>
@@ -1716,6 +1701,8 @@ function App() {
                 </SectionLabel>
                 <SectionContent>
                   <BodyText>The mobile app serves as the central hub for the TENDOR experience. Every screen was designed to feel familiar to climbers while introducing innovative features that enhance their training process.</BodyText>
+            
+                  <BodyText>The video analysis scrubber responds to touch with the same precision climbers expect when adjusting holds, while AR overlay controls fade in and out seamlessly to avoid disrupting the climbing flow. Social features integrate organically into the training experience, allowing climbers to share beta and celebrate sends without breaking focus from their session.</BodyText>
                 </SectionContent>
               </SectionGrid>
             </RevealTrigger>
@@ -1752,7 +1739,7 @@ function App() {
 
           <SectionGrid>
             <SectionLabel>
-              <H2>TENDOR needed to inspire climbers, not just teach them, so I built Alex Honnold's free solo story to show what's possible when fear doesn't limit you</H2>
+              <H2>TENDOR needed to inspire climbers, so I built Alex Honnold's free solo story to show what's possible</H2>
             </SectionLabel>
             <SectionContent>
               <BodyText>While building TENDOR's technical features, I realized the app needed an emotional core—something that reminds climbers why they fell in love with the sport. Alex Honnold's free solo ascent of El Capitan represents the ultimate expression of climbing: pure focus, complete trust in technique, and the courage to push beyond what seems possible.</BodyText>
@@ -1772,7 +1759,7 @@ function App() {
 
           <SectionGrid>
             <SectionLabel>
-              <H2>Building social features that connect climbers and create community around shared climbing progress</H2>
+              <H2>Building social features that connect climbers and create community around shared progress</H2>
             </SectionLabel>
             <SectionContent>
               <BodyText>The climbing community thrives on shared experiences and mutual encouragement. I designed TENDOR's social features to capture this spirit digitally—allowing climbers to share their progress, celebrate achievements together, and find motivation through their community connections.</BodyText>
@@ -1904,7 +1891,7 @@ function App() {
 
           <SectionGrid>
             <SectionLabel>
-              <H2>What I learned designing for a sport I love (and why it was harder than I thought)</H2>
+              <H2>What I learned designing for a sport I love</H2>
             </SectionLabel>
             <SectionContent>
               <BodyText>The biggest challenge was learning to design for a community I'm part of while maintaining objectivity about user needs. Being a climber helped me understand the problem deeply, but I had to constantly validate assumptions through research with other climbers.</BodyText>
@@ -1915,13 +1902,13 @@ function App() {
             <ContactTitle>Get in Touch</ContactTitle>
             <ContactLinks>
               <ContactLink href="mailto:laurens@ramsenthaler.com">
-                Email <span>↗</span>
+                Email <span style={{display: 'inline-block', transition: 'transform 0.3s ease'}}>↗</span>
               </ContactLink>
               <ContactLink href="https://www.linkedin.com/in/laurens-ramsenthaler/" target="_blank" rel="noopener noreferrer">
-                LinkedIn <span>↗</span>
+                LinkedIn <span style={{display: 'inline-block', transition: 'transform 0.3s ease'}}>↗</span>
               </ContactLink>
               <ContactLink href="https://instagram.com/upartig.design" target="_blank" rel="noopener noreferrer">
-                Instagram <span>↗</span>
+                Instagram <span style={{display: 'inline-block', transition: 'transform 0.3s ease'}}>↗</span>
               </ContactLink>
             </ContactLinks>
           </ContactFooter>

@@ -25,28 +25,28 @@ export default class SplineClimbingWall extends Group {
   }
 
   _createBackground() {
-    // Create a moonlight night background div behind everything
-    this._backgroundDiv = document.createElement('div');
-    this._backgroundDiv.style.position = 'fixed';
-    this._backgroundDiv.style.top = '0';
-    this._backgroundDiv.style.left = '0';
-    this._backgroundDiv.style.width = '100%';
-    this._backgroundDiv.style.height = '100%';
-    // Darker moonlight gradient with more blue in dark areas
-    this._backgroundDiv.style.background = `
-      radial-gradient(ellipse at 70% 20%, rgba(20, 35, 60, 0.3) 0%, transparent 50%),
-      linear-gradient(180deg, 
-        #040812 0%, 
-        #0a0f1a 20%, 
-        #050a15 40%, 
-        #020510 70%, 
-        #000308 100%
-      )
-    `;
-    this._backgroundDiv.style.zIndex = '-2'; // Behind everything
-    
-    // Add moonlight background to DOM
-    document.body.appendChild(this._backgroundDiv);
+      // Create a moonlight night background div behind everything
+      this._backgroundDiv = document.createElement('div');
+      this._backgroundDiv.style.position = 'fixed';
+      this._backgroundDiv.style.top = '0';
+      this._backgroundDiv.style.left = '0';
+      this._backgroundDiv.style.width = '100%';
+      this._backgroundDiv.style.height = '100%';
+      // Darker moonlight gradient with more blue in dark areas
+      this._backgroundDiv.style.background = `
+        radial-gradient(ellipse at 70% 20%, rgba(20, 35, 60, 0.3) 0%, transparent 50%),
+        linear-gradient(180deg, 
+          #040812 0%, 
+          #0a0f1a 20%, 
+          #050a15 40%, 
+          #020510 70%, 
+          #000308 100%
+        )
+      `;
+      this._backgroundDiv.style.zIndex = '-2'; // Behind everything
+      
+      // Add moonlight background to DOM
+      document.body.appendChild(this._backgroundDiv);
   }
 
   async _loadSplineContent() {
