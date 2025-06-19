@@ -110,7 +110,7 @@ export default class App {
     // Mouse position for climber head tracking
     this.normalizedMouseX = 0;
     this.normalizedMouseY = 0;
-    
+
     // 🔥 DEBUG MODE - DISABLE SPAM
     this.debugMode = false;
 
@@ -637,8 +637,8 @@ export default class App {
 
     if (this.uiOverlay) {
       this.uiOverlay.dispose();
-    }
-  }
+        }
+      }
 
   // 🔥 PERFORMANCE BENCHMARK REMOVED FOR PRODUCTION
   // _runPerformanceBenchmark() { ... } - REMOVED
@@ -691,11 +691,11 @@ export default class App {
     // Log culling stats occasionally
     if (Math.random() < 0.1) {
       if (this.debugMode) {
-        console.log('🔥 Frustum Culling:', { 
-          culled: culledCount, 
-          visible: visibleCount, 
-          totalCulled: this.culledObjects.size 
-        });
+      console.log('🔥 Frustum Culling:', { 
+        culled: culledCount, 
+        visible: visibleCount, 
+        totalCulled: this.culledObjects.size 
+      });
       }
     }
   }
@@ -766,7 +766,7 @@ export default class App {
     const el = document.querySelector('#canvas_main');
     el.style.touchAction = 'none';
     el.style.pointerEvents = 'none'; // 🔥 FIX: Let clicks pass through to Spline canvas behind
-
+    
     // Mouse move event for head tracking only - no more distortion texture
     window.addEventListener('mousemove', (ev) => {
       // Direct mouse tracking without throttling for better responsiveness
@@ -815,7 +815,7 @@ export default class App {
       });
     }
   }
-  
+
   _toggleUIControls() {
     // Toggle visibility of debug controls ONLY
     const debugElements = [
@@ -844,9 +844,9 @@ export default class App {
     return {
       // Main UI Components
       scrollIndicator: { start: 0, end: 8 }, // Visible from start, fade out at 12% (earlier)
-      findYourFlow: { start: 10, end: 45 },
-      pushTheLimits: { start: 45, end: 70 }, // EARLIER - starts at 50% instead of 65%
-      getInTouch: { start: 95, end: 100 }, // LATER - starts at 75%, stays until very end
+      findYourFlow: { start: 25, end: 50 },
+      pushTheLimits: { start: 50, end: 75 }, // EARLIER - starts at 50% instead of 65%
+      getInTouch: { start: 80, end: 95 }, // EARLIER - starts at 70%, ends at 95%
       bioDescription: { start: 80, end: 100 }, // LATER - same as copyright timing
       // copyright: { start: 95, end: 100 }, // LATER - fades in when Get in Touch comes in - DISABLED FOR NOW
       

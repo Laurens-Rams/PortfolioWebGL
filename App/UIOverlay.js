@@ -252,34 +252,50 @@ export default class UIOverlay {
               element.innerHTML = `
           <h2 style="
             font-size: ${globalTypography.h2.fontSize};
-            font-weight: ${globalTypography.h2.fontWeight};
+            font-weight: 700;
             line-height: ${globalTypography.h2.lineHeight};
             margin: 0 0 ${globalTypography.h2.marginBottom} 0;
             letter-spacing: ${globalTypography.h2.letterSpacing};
             color: white;
-            max-width: 500px;
+            max-width: 510px;
           ">
-            I feel a tension. Between a sense of calm and a love of motion. I’m patient and focused, but I also like to act and get things done.
+            I feel a tension. Between a sense of calm and a love of motion. I'm patient and focused, but I also like to act and get things done.
              <br/><br/>Right now, I'm exploring Creative Computing through a master's at the University of Arts London.
           </h2>
         `;
          } else if (headline === 'Find Your Flow') {
-        // Component 2: Title + description + skills list
+        // Component 2: Bio content (swapped from component 3)
         element.innerHTML = `
         <h2 style="
           font-size: ${globalTypography.h2.fontSize};
-          font-weight: ${globalTypography.h2.fontWeight};
+          font-weight: 700;
           line-height: ${globalTypography.h2.lineHeight};
           margin: 0 0 ${globalTypography.h2.marginBottom} 0;
           letter-spacing: ${globalTypography.h2.letterSpacing};
+          color: white;
           max-width: 500px;
-        ">I work at the intersection of design, interaction, and technology.</h2>
+        ">
+          Hey! I'm an interaction design graduate studying Creative Computing at University of Arts London.<br><br> I'm excited about creating digital experiences that move (you). My background is a mix of interaction design, motion, and enough coding to bring ideas to life.
+        </h2>
+      `;
+    } else {
+      // Component 3: Title + description + skills list (swapped from component 2)
+      element.innerHTML = `
+        <h2 style="
+          font-size: ${globalTypography.h2.fontSize};
+          font-weight: 700;
+          line-height: ${globalTypography.h2.lineHeight};
+          margin: 0 0 ${globalTypography.h2.marginBottom} 0;
+          letter-spacing: ${globalTypography.h2.letterSpacing};
+          max-width: 510px;
+          color: white;
+        ">How I move through design and code</h2>
         
         <div style="
           display: grid;
           grid-template-columns: repeat(2, 1fr);
           gap: 1rem;
-          width: 500px;
+          width: 516px;
         ">
           ${['Creative Coding', 'UI/UX Design', 'Three.js/WebGL', 'Motion Design', 'React/Next.js', 'Brand Design'].map(skill => `
             <div style="
@@ -300,24 +316,8 @@ export default class UIOverlay {
           `).join('')}
         </div>
       `;
-    } else {
-      // Component 3: Now with Bio content (just h2, no smaller text)
-      element.innerHTML = `
-        <h2 style="
-          font-size: ${globalTypography.h2.fontSize};
-          font-weight: ${globalTypography.h2.fontWeight};
-          line-height: ${globalTypography.h2.lineHeight};
-          margin: 0 0 ${globalTypography.h2.marginBottom} 0;
-          letter-spacing: ${globalTypography.h2.letterSpacing};
-          color: white;
-          max-width: 500px;
-        ">
-          I feel a tension. Between a sense of calm and a love of motion. I'm patient and focused, but I also like to act and get things done.
-          <br/><br/>Right now, I'm exploring Creative Computing through a master's at the University of Arts London.
-        </h2>
-      `;
       
-      // Component 3 is now just text, no hover effects needed
+      // Component 3 now has interactive skills grid
     }
     
     this.overlay.appendChild(element);
@@ -343,11 +343,12 @@ export default class UIOverlay {
         position: fixed;
         top: 5vh;
         left: 5vh;
-        font-size: ${globalTypography.h1.fontSize};
-        font-weight: ${globalTypography.h1.fontWeight};
-        line-height: ${globalTypography.h1.lineHeight};
+        font-family: 'ABC Oracle', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        font-size: 2.76rem;
+        font-weight: 700;
+        line-height: 1.1;
         margin: 0;
-        letter-spacing: ${globalTypography.h1.letterSpacing};
+        letter-spacing: -0.2px;
         color: white;
         transform: translateY(-20vh);
       ">Get in Touch</h1>
@@ -361,7 +362,7 @@ export default class UIOverlay {
         pointer-events: auto;
         transform: translateY(-20vh);
       ">
-        <a href="mailto:your.email@example.com" style="
+        <a href="mailto:laurens@ramsenthaler.com" style="
           color: white;
           text-decoration: none;
           font-size: ${globalTypography.body.fontSize};
@@ -372,7 +373,7 @@ export default class UIOverlay {
         " onmouseover="this.style.opacity='0.7'; this.style.transform='translateY(-2px)'" onmouseout="this.style.opacity='1'; this.style.transform='translateY(0)'">
           Email <span style="display: inline-block; transition: transform 0.3s ease;">↗</span>
         </a>
-        <a href="https://linkedin.com/in/yourprofile" style="
+        <a href="https://www.linkedin.com/in/laurens-ramsenthaler/" target="_blank" rel="noopener noreferrer" style="
           color: white;
           text-decoration: none;
           font-size: ${globalTypography.body.fontSize};
@@ -383,7 +384,7 @@ export default class UIOverlay {
         " onmouseover="this.style.opacity='0.7'; this.style.transform='translateY(-2px)'" onmouseout="this.style.opacity='1'; this.style.transform='translateY(0)'">
           LinkedIn <span style="display: inline-block; transition: transform 0.3s ease;">↗</span>
         </a>
-        <a href="https://instagram.com/yourprofile" style="
+        <a href="https://instagram.com/upartig.design" target="_blank" rel="noopener noreferrer" style="
           color: white;
           text-decoration: none;
           font-size: ${globalTypography.body.fontSize};
@@ -409,7 +410,7 @@ export default class UIOverlay {
         opacity: 0;
         transition: opacity 0.3s ease-in-out;
       " id="bio-description">
-        I work at the intersection of design, motion, and technology. Right now, I’m exploring Creative Computing through a master’s at the University of Arts London. My best work emerges from the sweet spot between calm and movement. 
+        I work at the intersection of design, motion, and technology. Right now, I'm exploring Creative Computing through a master's at the University of Arts London. My best work emerges from the sweet spot between calm and movement. 
       </div>
     `;
     this.overlay.appendChild(element);
@@ -446,9 +447,20 @@ export default class UIOverlay {
       let opacity = 0;
       let translateY = 0; // For parallax movement
       
-      if (scrollProgress >= timing.start && scrollProgress <= timing.end) {
-        // Calculate progress within this component's timing range
-        const componentProgress = (scrollProgress - timing.start) / (timing.end - timing.start);
+      // Special handling for contact section - stays visible after end point
+      const shouldBeVisible = (type === 'contact-section') ? 
+        (scrollProgress >= timing.start) : 
+        (scrollProgress >= timing.start && scrollProgress <= timing.end);
+        
+      if (shouldBeVisible) {
+                  // Calculate progress within this component's timing range
+          // Special handling for contact section - cap movement at end point
+          let componentProgress;
+          if (type === 'contact-section' && scrollProgress > timing.end) {
+            componentProgress = 1; // Stop movement calculation at end point (95%)
+          } else {
+            componentProgress = (scrollProgress - timing.start) / (timing.end - timing.start);
+          }
         
         // PARALLAX MOVEMENT LOGIC
         if (type === 'scroll-indicator') {
@@ -459,14 +471,14 @@ export default class UIOverlay {
           // Motivation text: adjust starting position based on component
           let startY, endY;
           
-          if (element.innerHTML.includes('I work at the intersection')) {
+          if (element.innerHTML.includes('How I move through')) {
             // Component 2: Start lower on screen (not almost outside top)
-            startY = -40; // Start lower than before (-50vh was too high)
-            endY = 15;    // End closer to screen
-          } else if (element.innerHTML.includes('I feel a tension.')) {
+            startY = -25; // Start lower than before (-50vh was too high)
+            endY = 10;    // End closer to screen
+          } else if (element.innerHTML.includes('Hey!')) {
             // Bio Description: Same as component 3 positioning but moves down more
-            startY = -15; // Same starting position as component 3
-            endY = 30;    // Move down more than component 3 (was 20)
+            startY = -25; // Same starting position as component 3
+            endY = 10;    // Move down more than component 3 (was 20)
           } else {
             // Component 3 (case study): Same movement range as component 2 for same speed
             startY = -25; // Same starting position as component 2
@@ -505,8 +517,8 @@ export default class UIOverlay {
             }
           }
         } else if (type === 'contact-section') {
-          // Contact section: stays until very end, no fade out
-          opacity = 1; // Always visible when in range
+          // Contact section: stays visible from 80% onwards, NEVER fades out
+          opacity = 1; // Always fully visible once it appears
           
           // Bio description handled separately as its own component - REMOVED FROM HERE
           

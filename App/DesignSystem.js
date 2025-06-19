@@ -27,20 +27,20 @@ export const tokens = {
       letterSpacing: '-0.2',
     },
     h2: {
-      fontSize: '1.6rem',
+      fontSize: '1.9rem',
       lineHeight: 1.15,
       marginBottom: '16px',
       color: '#001E21',  // Dark teal color for H2
-      letterSpacing: '0.01em',
+      letterSpacing: '-0.02em',
     },
     body: {
-      fontSize: '1.1rem',
+      fontSize: '1.3rem',
       lineHeight: 1.35,
       marginBottom: '17px',
-      letterSpacing: '0.01em',
+      letterSpacing: '0.0em',
     },
     caption: {
-      fontSize: '0.875rem',
+      fontSize: '1.0rem',
       lineHeight: 1.4,
       marginBottom: '8px',
       letterSpacing: '0.02em',
