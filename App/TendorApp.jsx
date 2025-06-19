@@ -902,25 +902,33 @@ const ExpandableSection = styled.div`
 `;
 
 const ExpandButton = styled.button`
-  background: linear-gradient(135deg, #00C9AB 0%, #0C9181 100%);
-  color: white;
-  border: none;
-  padding: 12px 24px;
-  border-radius: 24px;
+  background: #f8f8f8;
+  color: #333333;
+  border: 1px solid #d0d0d0;
+  padding: 10px 20px;
+  border-radius: 8px;
   font-family: 'ABC Repro', sans-serif;
   font-size: 0.875rem;
   font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
   cursor: pointer;
-  transition: all 0.3s ease;
-  margin: ${spacing.textToMedia} 0;
+  transition: all 0.2s ease;
+  margin: ${spacing.textToMedia} 0 6px 0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   
   &:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 25px rgba(0, 201, 171, 0.3);
+    background: #f0f0f0;
+    color: #222222;
+    border-color: #b8b8b8;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+    transform: translateY(-1px);
   }
   
   &:active {
+    background: #e8e8e8;
     transform: translateY(0);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
   }
 `;
 
@@ -1379,6 +1387,20 @@ function App() {
       <ContentWrapper>
         <Container>
           <ContentSection>
+          <SectionGrid>
+            <SectionLabel>
+              <H2>Most fitness apps treat climbing like reps, but it's really problem-solving with your body</H2>
+            </SectionLabel>
+            <SectionContent>
+              <BodyText>Before I sketched a single screen, I had to figure out what this project even stood for. What I kept coming back to: most fitness apps treat climbers like they're counting reps. But climbing is about solving puzzles with your body, not just tracking effort.</BodyText>
+              <BodyText>So I shaped TENDOR around a different goal: smart, personalized support for real climbers. Not a workout log but more like a coach who gets you.</BodyText>
+              
+              <ExpandButton onClick={() => setIsPersonalStoryExpanded(!isPersonalStoryExpanded)}>
+                {isPersonalStoryExpanded ? 'Hide Personal Story' : 'Read My Personal Story'}
+              </ExpandButton>
+            </SectionContent>
+          </SectionGrid>
+
           <ExpandableSection $isExpanded={isPersonalStoryExpanded}>
             <SectionGrid>
               <SectionLabel>
@@ -1396,16 +1418,8 @@ function App() {
 
           <SectionGrid>
             <SectionLabel>
-              <H2>Most fitness apps treat climbing like reps, but it's really problem-solving with your body</H2>
             </SectionLabel>
             <SectionContent>
-              <BodyText>Before I sketched a single screen, I had to figure out what this project even stood for. What I kept coming back to: most fitness apps treat climbers like they're counting reps. But climbing is about solving puzzles with your body, not just tracking effort.</BodyText>
-              <BodyText>So I shaped TENDOR around a different goal: smart, personalized support for real climbers. Not a workout log but more like a coach who gets you.</BodyText>
-              
-              <ExpandButton onClick={() => setIsPersonalStoryExpanded(!isPersonalStoryExpanded)}>
-                {isPersonalStoryExpanded ? 'Hide Personal Story' : 'Read My Personal Story'}
-              </ExpandButton>
-              
               <VisionMissionGrid>
                 <VisionMissionCard>
                   <h3>Vision</h3>
@@ -1460,7 +1474,7 @@ function App() {
 
           <SectionGrid>
             <SectionLabel>
-              <H2>Turquoise to cut through the sea of black and earth tones common in climbing gear and apps</H2>
+              <H2>Turquoise to cut through the sea of black and earth tones dominating climbing apps</H2>
             </SectionLabel>
             <SectionContent>
               <BodyText>Turquoise? Yeah, it's bold. But that was the point I picked turquoise because it cuts through the usual black and earth tones you see in climbing. It's fresh, it feels tech-forward, and it quietly connects both nature (green) and innovation (blue). In user testing, climbers said turquoise makes them feel focused, confident, and "ready to send." That's exactly the energy we want them to feel.</BodyText>
@@ -1517,7 +1531,7 @@ function App() {
 
           <SectionGrid>
             <SectionLabel>
-              <H2>Choosing a typeface that feels sharp, engineered, and built for clarity</H2>
+              <H2>Choosing a typeface that feels sharp, engineered, and built for absolute clarity</H2>
             </SectionLabel>
             <SectionContent>
               <BodyText>Supermolot Grotesk had the right vibe. Angular, engineered, and just a little aggressive, without feeling cold. It mirrors the modular shapes and characteristics in the logo, and gives the whole brand a solid, grounded base to build on.</BodyText>
@@ -1531,7 +1545,7 @@ function App() {
                 <TCircle />
                 <KCircle />
               </LargeTk>
-              <ImageCaption style={{marginTop: '20px'}}>Interchangeable with Logo Letters</ImageCaption>
+
             </SectionLabel>
             <SectionContent style={{
               position: 'relative',
@@ -1653,7 +1667,7 @@ function App() {
 
           <SectionGrid>
             <SectionLabel>
-              <H2>Standard UI kits weren't enough, so I built new special components made for climbers' needs.</H2>
+              <H2>Standard UI kits weren't enough, so I built custom components.</H2>
             </SectionLabel>
             <SectionContent>
               <BodyText>Building TENDOR required creating interface elements that don't exist in typical design systems. Climbers need specialized tools for analyzing movement, sharing beta, and tracking progress in ways that generic fitness apps can't provide.</BodyText>
@@ -1691,7 +1705,7 @@ function App() {
             <RevealTrigger>
               <SectionGrid>
                 <SectionLabel>
-                  <H2>Designing every screen and interaction to feel like part of the climb.</H2>
+                  <H2>Designing every screen and interaction to feel like part of the climbing experience.</H2>
                 </SectionLabel>
                 <SectionContent>
                   <BodyText>The mobile app serves as the central hub for the TENDOR experience. Every screen was designed to feel familiar to climbers while introducing innovative features that enhance their training process.</BodyText>
@@ -1751,7 +1765,7 @@ function App() {
 
           <SectionGrid>
             <SectionLabel>
-              <H2>Building social features that connect climbers and create community around shared progress</H2>
+              <H2>Building social features that connect climbers and create community around shared climbing progress</H2>
             </SectionLabel>
             <SectionContent>
               <BodyText>The climbing community thrives on shared experiences and mutual encouragement. I designed TENDOR's social features to capture this spirit digitally—allowing climbers to share their progress, celebrate achievements together, and find motivation through their community connections.</BodyText>
@@ -1825,18 +1839,6 @@ function App() {
             {/* Spacer after interior gym group */}
             <PhotoGroupSpacer />
 
-            {/* (Em)Powered Performance section moved here */}
-            <div style={{gridColumn: '1 / -1', margin: '60px 0'}}>
-              <SectionGrid>
-                <SectionLabel>
-                  <H2>(Em)Powered Performance</H2>
-                </SectionLabel>
-                <SectionContent>
-                  <BodyText>(Em)Powered Performance is about two things. First, we're giving you feedback that powers real progress. Second, we're doing it in a way that makes you feel supported, not judged. It's a small play on words, but it sums up everything we're building.</BodyText>
-                </SectionContent>
-              </SectionGrid>
-            </div>
-
             {/* Category 2: Brand applications */}
             <div>
               <ImageCaption>Brand applications</ImageCaption>
@@ -1852,6 +1854,18 @@ function App() {
 
             {/* Spacer after brand applications group */}
             <PhotoGroupSpacer />
+
+            {/* (Em)Powered Performance section moved here */}
+            <div style={{gridColumn: '1 / -1', margin: '60px 0'}}>
+              <SectionGrid>
+                <SectionLabel>
+                  <H2>(Em)Powered Performance: Smart feedback that supports, not judges</H2>
+                </SectionLabel>
+                <SectionContent>
+                  <BodyText>(Em)Powered Performance is about two things. First, we're giving you feedback that powers real progress. Second, we're doing it in a way that makes you feel supported, not judged. It's a small play on words, but it sums up everything we're building.</BodyText>
+                </SectionContent>
+              </SectionGrid>
+            </div>
 
             {/* Category 3: Partnership programs */}
             <div>

@@ -27,11 +27,11 @@ export const tokens = {
       letterSpacing: '-0.2',
     },
     h2: {
-      fontSize: '1.9rem',
+      fontSize: '1.82rem',
       lineHeight: 1.15,
       marginBottom: '16px',
       color: '#001E21',  // Dark teal color for H2
-      letterSpacing: '-0.02em',
+      letterSpacing: '-0.03em',
     },
     body: {
       fontSize: '1.3rem',
