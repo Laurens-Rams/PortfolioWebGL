@@ -893,6 +893,37 @@ const PersonaSectionText = styled.p`
   opacity: 0.9;
 `;
 
+// 🎯 EXPANDABLE SECTION COMPONENTS
+const ExpandableSection = styled.div`
+  overflow: hidden;
+  transition: max-height 0.5s ease, opacity 0.3s ease;
+  max-height: ${props => props.$isExpanded ? '2000px' : '0'};
+  opacity: ${props => props.$isExpanded ? '1' : '0'};
+`;
+
+const ExpandButton = styled.button`
+  background: linear-gradient(135deg, #00C9AB 0%, #0C9181 100%);
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 24px;
+  font-family: 'ABC Repro', sans-serif;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin: ${spacing.textToMedia} 0;
+  
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0, 201, 171, 0.3);
+  }
+  
+  &:active {
+    transform: translateY(0);
+  }
+`;
+
 const AutoSlider = styled.div`
   display: flex;
   gap: 20px;
@@ -1068,6 +1099,7 @@ function App() {
   const [useStaticHero, setUseStaticHero] = useState(false);
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [heroFadeOpacity, setHeroFadeOpacity] = useState(0);
+  const [isPersonalStoryExpanded, setIsPersonalStoryExpanded] = useState(false);
   const videoRef = useRef(null);
   const alexVideoRef = useRef(null);
   const creativePlatformRef = useRef(null);
@@ -1347,18 +1379,20 @@ function App() {
       <ContentWrapper>
         <Container>
           <ContentSection>
-          <SectionGrid>
-            <SectionLabel>
-              <H2>One-size-fits-all advice just doesn't work in a sport this personal</H2>
-            </SectionLabel>
-            <SectionContent>
-              <BodyText>I've been climbing for years, and there's this moment every climber knows. You're on a route, everything's flowing, and then one move just shuts you down. So, like everyone, you scroll Instagram or YouTube hoping to find someone with the same beta.</BodyText>
-              <BodyText>But here's what I kept seeing: tips that worked for someone tall didn't help my smaller friend at all. One-size-fits-all advice just doesn't work in a sport this personal.</BodyText>
-              <BodyText>That's when I had the "what if" moment. What if tech could understand each climber's movement, style, and body? That's when I decided to combine my background in design, programming, and entrepreneurship to build something better. TENDOR.</BodyText>
-            </SectionContent>
-          </SectionGrid>
+          <ExpandableSection $isExpanded={isPersonalStoryExpanded}>
+            <SectionGrid>
+              <SectionLabel>
+                <H2>One-size-fits-all advice just doesn't work in a sport this personal</H2>
+              </SectionLabel>
+              <SectionContent>
+                <BodyText>I've been climbing for years, and there's this moment every climber knows. You're on a route, everything's flowing, and then one move just shuts you down. So, like everyone, you scroll Instagram or YouTube hoping to find someone with the same beta.</BodyText>
+                <BodyText>But here's what I kept seeing: tips that worked for someone tall didn't help my smaller friend at all. One-size-fits-all advice just doesn't work in a sport this personal.</BodyText>
+                <BodyText>That's when I had the "what if" moment. What if tech could understand each climber's movement, style, and body? That's when I decided to combine my background in design, programming, and entrepreneurship to build something better. TENDOR.</BodyText>
+              </SectionContent>
+            </SectionGrid>
 
-          <LogoFullWidth>PERSONAL CLIMBING STORY FULL-WIDTH PLACEHOLDER</LogoFullWidth>
+            <LogoFullWidth>PERSONAL CLIMBING STORY FULL-WIDTH PLACEHOLDER</LogoFullWidth>
+          </ExpandableSection>
 
           <SectionGrid>
             <SectionLabel>
@@ -1367,6 +1401,10 @@ function App() {
             <SectionContent>
               <BodyText>Before I sketched a single screen, I had to figure out what this project even stood for. What I kept coming back to: most fitness apps treat climbers like they're counting reps. But climbing is about solving puzzles with your body, not just tracking effort.</BodyText>
               <BodyText>So I shaped TENDOR around a different goal: smart, personalized support for real climbers. Not a workout log but more like a coach who gets you.</BodyText>
+              
+              <ExpandButton onClick={() => setIsPersonalStoryExpanded(!isPersonalStoryExpanded)}>
+                {isPersonalStoryExpanded ? 'Hide Personal Story' : 'Read My Personal Story'}
+              </ExpandButton>
               
               <VisionMissionGrid>
                 <VisionMissionCard>
