@@ -140,15 +140,12 @@ class FadeInManager {
       '/tendor-assets/TENDOR/Slider6.png'
     ];
 
-    // Track preloading progress
+    // Track preloading progress for console logging
     this.preloadingStats = {
       total: criticalAssets.length + secondaryAssets.length,
       loaded: 0,
       startTime: Date.now()
     };
-
-    // Create subtle preload indicator (optional - can be removed)
-    this.createPreloadIndicator();
 
     // Preload critical assets first (with throttling)
     this.preloadAssetList(criticalAssets, 'critical').then(() => {
@@ -158,58 +155,13 @@ class FadeInManager {
       this.preloadAssetList(secondaryAssets, 'secondary').then(() => {
         const duration = ((Date.now() - this.preloadingStats.startTime) / 1000).toFixed(1);
         console.log(`🔥 All TENDOR assets preloaded in ${duration}s - instant case study loading ready!`);
-        this.removePreloadIndicator();
       });
     });
-  }
-
-  createPreloadIndicator() {
-    // Create a subtle indicator in bottom-right corner
-    this.preloadIndicator = document.createElement('div');
-    this.preloadIndicator.style.cssText = `
-      position: fixed;
-      bottom: 20px;
-      right: 20px;
-      background: rgba(0, 201, 171, 0.9);
-      color: white;
-      padding: 8px 12px;
-      border-radius: 20px;
-      font-family: 'ABC Repro', sans-serif;
-      font-size: 12px;
-      font-weight: 600;
-      z-index: 1000;
-      opacity: 0;
-      transition: opacity 0.3s ease;
-      pointer-events: none;
-      backdrop-filter: blur(10px);
-    `;
-    this.preloadIndicator.textContent = 'Preloading case study...';
-    document.body.appendChild(this.preloadIndicator);
-    
-    // Fade in after a short delay
-    setTimeout(() => {
-      this.preloadIndicator.style.opacity = '1';
-    }, 100);
-  }
-
-  removePreloadIndicator() {
-    if (this.preloadIndicator) {
-      this.preloadIndicator.style.opacity = '0';
-      setTimeout(() => {
-        if (this.preloadIndicator && this.preloadIndicator.parentNode) {
-          this.preloadIndicator.parentNode.removeChild(this.preloadIndicator);
-        }
-      }, 300);
-    }
   }
 
   updatePreloadProgress() {
     this.preloadingStats.loaded++;
     const progress = Math.round((this.preloadingStats.loaded / this.preloadingStats.total) * 100);
-    
-    if (this.preloadIndicator) {
-      this.preloadIndicator.textContent = `Preloading case study... ${progress}%`;
-    }
     
     console.log(`🔥 Preload progress: ${this.preloadingStats.loaded}/${this.preloadingStats.total} (${progress}%)`);
   }
