@@ -186,6 +186,13 @@ class AppStateManager {
       console.log('🔥 WebGL canvas prepared for fade-in');
     }
     
+    // 🔥 RESTORE CASE STUDY HOVER THUMBNAIL
+    const hoverImg = document.querySelector('.case-study-hover-image');
+    if (hoverImg) {
+      hoverImg.style.display = 'block';
+      // Keep opacity at 0 - it will show on hover
+    }
+    
     // 🔥 RESTORE ANIMATION STATE
     if (state.animationState && tiles._animationController) {
       tiles._animationController.currentState = state.animationState.currentState;
@@ -241,6 +248,13 @@ class AppStateManager {
     
     // Emit transition start
     this.emit('transitionStart', { to: 'case-study' });
+    
+    // 🔥 HIDE CASE STUDY HOVER THUMBNAIL IMMEDIATELY
+    const hoverImg = document.querySelector('.case-study-hover-image');
+    if (hoverImg) {
+      hoverImg.style.opacity = '0';
+      hoverImg.style.display = 'none';
+    }
     
     // 🔥 AGGRESSIVELY DISABLE SPLINE INTERACTIONS
     this.emit('disableSplineInteractions');
