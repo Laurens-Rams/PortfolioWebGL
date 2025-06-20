@@ -1,7 +1,3 @@
-import { Group, Vector3, MathUtils, AnimationMixer, LoopOnce, LoopRepeat, MeshStandardMaterial, FrontSide } from 'three';
-import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
-import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader';
-import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js';
 import { addGLBToTile, addGLBToTileNoAnimation } from './handleGLBModels';
 import { CLIMBING_CONFIG } from '../ClimbingConfig';
 import { UltraLightCharacterPreview } from '../UltraLightCharacterPreview';
@@ -25,10 +21,13 @@ const CROSSFADE_DURATION = 0.25; // seconds for AnimationAction.crossFadeTo
 const characterMaterialCache = new Map();
 
 // Optimized material creation with caching for the main character
-function getOptimizedCharacterMaterial(color, roughness, metalness) {
+async function getOptimizedCharacterMaterial(color, roughness, metalness) {
   const key = `${color.isColor ? color.getHexString() : color}_${roughness}_${metalness}`; // Ensure color key is string
 
   if (!characterMaterialCache.has(key)) {
+    const threeModule = window.THREE || await import('three');
+    const { MeshStandardMaterial, FrontSide } = threeModule;
+    
     const material = new MeshStandardMaterial({
       color: color,
       roughness: roughness,
@@ -42,9 +41,12 @@ function getOptimizedCharacterMaterial(color, roughness, metalness) {
   return characterMaterialCache.get(key);
 }
 
-export default class Tiles extends Group {
+export default class Tiles {
   constructor(camera, scene, pointLight, app, lights = {}) {
-    super();
+    // Initialize as a regular class, not extending Group
+    // We'll create the group dynamically when Three.js is available
+    this._group = null;
+    this._isThreeJSReady = false;
 
     this._camera = camera;
     this._scene = scene;
@@ -53,7 +55,53 @@ export default class Tiles extends Group {
     this._lights = lights;
     
     this._initializeVariables();
-    this._init();
+    
+    // Initialize async - don't wait for it to complete
+    this._init().catch(error => {
+      console.error('Failed to initialize Tiles:', error);
+    });
+  }
+
+  // Method to initialize Three.js Group when Three.js is available
+  async initThreeGroup() {
+    if (!this._group && (window.THREE || await this._loadThreeJS())) {
+      const threeModule = window.THREE || await import('three');
+      const { Group } = threeModule;
+      this._group = new Group();
+      this._isThreeJSReady = true;
+      
+      // Copy all Group methods to this instance
+      Object.getOwnPropertyNames(Group.prototype).forEach(name => {
+        if (name !== 'constructor' && typeof this._group[name] === 'function') {
+          this[name] = this._group[name].bind(this._group);
+        }
+      });
+      
+      // Copy all Group properties
+      Object.getOwnPropertyNames(this._group).forEach(name => {
+        if (!(name in this)) {
+          Object.defineProperty(this, name, {
+            get: () => this._group[name],
+            set: (value) => { this._group[name] = value; },
+            enumerable: true,
+            configurable: true
+          });
+        }
+      });
+    }
+    return this._group;
+  }
+
+  async _loadThreeJS() {
+    if (!this._isThreeJSReady) {
+      const threeModule = window.THREE || await import('three');
+      if (!window.THREE) {
+        window.THREE = threeModule;
+      }
+      this._isThreeJSReady = true;
+      return threeModule;
+    }
+    return window.THREE;
   }
 
   _initializeVariables() {
@@ -202,7 +250,10 @@ export default class Tiles extends Group {
     this._previewCharacter = null;
   }
 
-  _init() {
+  async _init() {
+    // Initialize Three.js Group first
+    await this.initThreeGroup();
+    
     // 🔥 PROGRESSIVE LOADING: Create instant preview first
     this._createInstantPreview();
     
@@ -214,8 +265,14 @@ export default class Tiles extends Group {
     // Create hover effect div for production (always enabled)
     this._createHoverEffectDiv();
     
-    // Load the climbing character (in background)
-    setTimeout(() => this._loadClimber(), 100); // Small delay for instant preview
+    // Load the climbing character (in background) - now async
+    setTimeout(async () => {
+      try {
+        await this._loadClimber();
+      } catch (error) {
+        console.error('Failed to load climber:', error);
+      }
+    }, 100); // Small delay for instant preview
     
     // Initialize UI overlay system
 
@@ -298,14 +355,29 @@ export default class Tiles extends Group {
     console.log('✅ Upgraded to optimized character with seamless animation transition');
   }
 
-  _loadClimber() {
+  async _loadClimber() {
     // 🔥 SMART LOADING: Use high-quality model for the full character (6MB)
     const climberPath = '/optimized_models/character_clean_4anims_compressed.glb';
     
     // Mark start of full character loading
     performanceMonitor.markCharacterFullStart();
     
-    // Create GLTF loader directly with DRACO and Meshopt support
+    // Load Three.js modules dynamically
+    const threeModule = await this._loadThreeJS();
+    const { AnimationMixer } = threeModule;
+    
+    // Import loaders dynamically
+    const [
+      { GLTFLoader },
+      { DRACOLoader },
+      { MeshoptDecoder }
+    ] = await Promise.all([
+      import('three/examples/jsm/loaders/GLTFLoader'),
+      import('three/examples/jsm/loaders/DRACOLoader'),
+      import('three/examples/jsm/libs/meshopt_decoder.module.js')
+    ]);
+    
+    // Create GLTF loader with DRACO and Meshopt support
     const dracoLoader = new DRACOLoader();
     dracoLoader.setDecoderPath('/draco/');
     const gltfLoader = new GLTFLoader();
@@ -855,7 +927,11 @@ export default class Tiles extends Group {
   }
 
   // CLEANED UP: Simple linear camera movement from 0% to 100% scroll
-  _moveCameraWithScroll(scrollOffset) {
+  async _moveCameraWithScroll(scrollOffset) {
+    // Load Three.js MathUtils dynamically
+    const threeModule = await this._loadThreeJS();
+    const { MathUtils } = threeModule;
+    
     // Linear camera movement from start to end position
     const startY = CLIMBING_CONFIG.CAMERA_START_Y + 300; // -1700
     const endY = CLIMBING_CONFIG.CAMERA_END_Y + 300;     // 800
@@ -932,8 +1008,10 @@ export default class Tiles extends Group {
     // Animation handling is now done in the centralized controller in update() method
     // No need for phase handling here anymore
     
-    // Move camera based on scroll
-    this._moveCameraWithScroll(scrollOffset);
+    // Move camera based on scroll - now async
+    this._moveCameraWithScroll(scrollOffset).catch(error => {
+      console.error('Error moving camera with scroll:', error);
+    });
     
     // Update UI overlay based on scroll
 
@@ -1263,7 +1341,9 @@ export default class Tiles extends Group {
 
     // Apply hip position compensation for turn-around animation
     if (!shouldSkipFrame) {
-      this._applyHipCompensation();
+      this._applyHipCompensation().catch(error => {
+        console.error('Error applying hip compensation:', error);
+      });
     }
 
     // Update head tracking (only when not actively scrolling and not skipping frame)
@@ -1280,9 +1360,13 @@ export default class Tiles extends Group {
   }
 
   // NEW: Centralized hip compensation method
-  _applyHipCompensation() {
+  async _applyHipCompensation() {
     // Only apply hip compensation for turn around animation and only if we have cached data
     if (this._animationController.currentState === 'turnAround' && this._hipBone && this._standingEndHipPosition && this._standingEndCharacterPosition) {
+      // Load Three.js Vector3 dynamically
+      const threeModule = await this._loadThreeJS();
+      const { Vector3 } = threeModule;
+      
       // Calculate the difference between current hip world position and desired world position
       const currentHipWorldPosition = new Vector3();
       this._hipBone.getWorldPosition(currentHipWorldPosition);

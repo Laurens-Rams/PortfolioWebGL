@@ -2,20 +2,24 @@
 // Loads the 7MB ultra-light version of your actual character
 // Same skeleton, animations, and look - just lower quality
 
-import {
-  Group,
-  AnimationMixer,
-  Vector3,
-  LoopRepeat
-} from 'three';
-import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
-import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader';
-import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js';
+// Removed static Three.js imports to prevent duplication warnings
+// import {
+//   Group,
+//   AnimationMixer,
+//   Vector3,
+//   LoopRepeat
+// } from 'three';
+// import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
+// import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader';
+// import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js';
 import { performanceMonitor } from './PerformanceMonitor.js';
 
-export class UltraLightCharacterPreview extends Group {
+export class UltraLightCharacterPreview {
   constructor() {
-    super();
+    // Initialize as a regular class, not extending Group
+    // We'll create the group dynamically when Three.js is available
+    this._group = null;
+    this._isThreeJSReady = false;
     
     this.name = 'UltraLightCharacterPreview';
     this.mixer = null;
@@ -23,6 +27,14 @@ export class UltraLightCharacterPreview extends Group {
     this.idleAction = null;
     this.isLoaded = false;
     this.animationTime = 0;
+    
+    this._init();
+  }
+
+  async _init() {
+    // Load Three.js and initialize Group
+    await this._loadThreeJS();
+    await this._initThreeGroup();
     
     // Position like the real character
     this.scale.set(20, 20, 20);
@@ -34,10 +46,65 @@ export class UltraLightCharacterPreview extends Group {
     console.log('🔥 Ultra-light character preview loading...');
   }
 
+  async _loadThreeJS() {
+    if (!this._isThreeJSReady) {
+      const threeModule = window.THREE || await import('three');
+      if (!window.THREE) {
+        window.THREE = threeModule;
+      }
+      this._isThreeJSReady = true;
+      return threeModule;
+    }
+    return window.THREE;
+  }
+
+  async _initThreeGroup() {
+    if (!this._group) {
+      const threeModule = await this._loadThreeJS();
+      const { Group } = threeModule;
+      this._group = new Group();
+      
+      // Copy all Group methods to this instance
+      Object.getOwnPropertyNames(Group.prototype).forEach(name => {
+        if (name !== 'constructor' && typeof this._group[name] === 'function') {
+          this[name] = this._group[name].bind(this._group);
+        }
+      });
+      
+      // Copy all Group properties
+      Object.getOwnPropertyNames(this._group).forEach(name => {
+        if (!(name in this)) {
+          Object.defineProperty(this, name, {
+            get: () => this._group[name],
+            set: (value) => { this._group[name] = value; },
+            enumerable: true,
+            configurable: true
+          });
+        }
+      });
+    }
+    return this._group;
+  }
+
   async _loadUltraLightCharacter() {
     const startTime = performance.now(); // Track loading time
     
     try {
+      // Load Three.js modules dynamically
+      const threeModule = await this._loadThreeJS();
+      const { AnimationMixer, LoopRepeat } = threeModule;
+      
+      // Import loaders dynamically
+      const [
+        { GLTFLoader },
+        { DRACOLoader },
+        { MeshoptDecoder }
+      ] = await Promise.all([
+        import('three/examples/jsm/loaders/GLTFLoader'),
+        import('three/examples/jsm/loaders/DRACOLoader'),
+        import('three/examples/jsm/libs/meshopt_decoder.module.js')
+      ]);
+      
       // Create GLTF loader with DRACO and Meshopt support
       const dracoLoader = new DRACOLoader();
       dracoLoader.setDecoderPath('/draco/');
