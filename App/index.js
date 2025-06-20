@@ -45,14 +45,14 @@ class FadeInManager {
     // Background is already visible (no fade needed)
     console.log('🔥 Background ready immediately');
     
-    // 🔥 EMERGENCY SCROLL UNLOCK - Fallback in case loading system gets stuck
+    // 🔥 MUCH FASTER EMERGENCY UNLOCK - Only wait 3 seconds for Spline
     setTimeout(() => {
       if (document.body.classList.contains('loading')) {
-        console.log('🚨 EMERGENCY: Force unlocking scroll after 10 seconds');
+        console.log('🚨 EMERGENCY: Force unlocking scroll after 3 seconds');
         document.body.classList.remove('loading');
         console.log('🔥 Emergency scroll unlock activated');
       }
-    }, 10000); // 10 second fallback
+    }, 3000); // Only 3 seconds - much faster
   }
   
   setLoaded(component) {
@@ -71,41 +71,48 @@ class FadeInManager {
   }
   
     fadeInCharacter() {
-    // Character fades in FASTER for better UX
-    console.log('🔥 Character fading in fast...');
+    // Character fades in INSTANTLY for immediate feedback
+    console.log('🔥 Character fading in instantly...');
     
-    // Get the main WebGL canvas and apply fade transition
+    // Get the main WebGL canvas and apply instant transition
     const webglCanvas = document.querySelector('#canvas_main');
     if (webglCanvas) {
       webglCanvas.style.zIndex = '0'; // Ensure above spline canvas
-      webglCanvas.style.transition = 'opacity 1.2s ease-out'; // Faster: 2s → 1.2s
+      webglCanvas.style.transition = 'opacity 0.3s ease-out'; // MUCH faster: 1.2s → 0.3s
       webglCanvas.style.opacity = '1';
     }
   }
 
   fadeInSpline() {
-    // Spline fades in FASTER for better user experience
+    // Spline fades in INSTANTLY for immediate scroll unlock
     const splineCanvas = document.querySelector('#spline-canvas');
     if (splineCanvas) {
-      splineCanvas.style.transition = 'opacity 1.5s ease-out'; // Much faster: 3.5s → 1.5s
+      splineCanvas.style.transition = 'opacity 0.5s ease-out'; // MUCH faster: 1.5s → 0.5s
       splineCanvas.style.opacity = '1';
-      console.log('🔥 Spline fading in slowly...');
+      console.log('🔥 Spline fading in instantly...');
     }
   }
   
   checkAllLoaded() {
-    const allLoaded = Object.values(this.loadedComponents).every(state => state);
+    // 🔥 ONLY WAIT FOR SPLINE - Character can load in background
+    const splineLoaded = this.loadedComponents.spline;
     
-    if (allLoaded) {
-      // Unlock scroll
+    if (splineLoaded) {
+      // Unlock scroll as soon as Spline is ready
       document.body.classList.remove('loading');
-      console.log('🔥 All components loaded - scroll unlocked');
+      console.log('🔥 Spline loaded - scroll unlocked (character can load in background)');
       
       // Mark complete loading
       performanceMonitor.markLoadingComplete();
       
-      // 🔥 START SMART PRELOADING AFTER EVERYTHING IS READY
+      // 🔥 START SMART PRELOADING AFTER SPLINE IS READY
       this.startSmartPreloading();
+    }
+    
+    // Check if everything is actually loaded for final state
+    const allLoaded = Object.values(this.loadedComponents).every(state => state);
+    if (allLoaded) {
+      console.log('🔥 All components fully loaded - experience complete');
     }
   }
 

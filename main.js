@@ -169,6 +169,13 @@ async function initApp() {
     window.React = React;
     window.ReactDOM = ReactDOM;
 
+    // 🔥 PREVENT SPLINE THREE.JS DUPLICATION - Set Three.js globally BEFORE app loads
+    if (!window.THREE) {
+      console.log('🔥 Pre-loading Three.js globally to prevent Spline duplication...');
+      window.THREE = await import('three');
+      console.log('🔥 Three.js set globally before app initialization');
+    }
+
     // Initialize the app - loading manager handles the rest
     const app = new App(false); // Debug mode disabled - using dialed-in values
     
