@@ -13,11 +13,9 @@
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     
-    <!-- 🔥 PARALLEL LOADING: Preload critical assets early -->
-    <link rel="prefetch" href="/optimized_models/character_ultra_light_4anims_compressed.glb" />
-    <link rel="prefetch" href="/optimized_models/character_clean_4anims_compressed.glb" />
-    <link rel="prefetch" href="/font-2.json" />
-    <link rel="modulepreload" href="https://unpkg.com/@splinetool/runtime" />
+    <!-- 🔥 MINIMAL PREFETCHING: Let dynamic loading handle everything -->
+    <!-- Removed all prefetches - dynamic loading is more efficient -->
+    <!-- This prevents bandwidth competition and cache conflicts -->
     
     <title>ART's Portfolio - Interactive WebGL Experience</title>
     <style>
@@ -139,7 +137,7 @@
     <!-- Service Worker Registration -->
     <script>
       if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('/sw.js?v=3')
+        navigator.serviceWorker.register('/sw.js?v=7')
           .then(registration => {
             console.log('✅ Service Worker registered successfully:', registration.scope);
             

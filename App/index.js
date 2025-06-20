@@ -14,7 +14,7 @@ import {
 
 import { DragGesture } from '@use-gesture/vanilla';
 // import Stats from 'stats.js'; // 🔥 REMOVED FOR PRODUCTION
-import * as dat from 'dat.gui';
+// import * as dat from 'dat.gui'; // 🔥 REMOVED FOR PRODUCTION - saves ~100KB bundle
 import Postprocessing from './Postprocessing';
 import { damp } from 'maath/easing';
 

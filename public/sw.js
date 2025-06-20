@@ -1,15 +1,15 @@
 // 🔥 SMART CACHING SERVICE WORKER FOR WEBGL PORTFOLIO
 // Caches optimized models and critical assets for instant loading
 
-const CACHE_NAME = 'webgl-portfolio-v5';
-const STATIC_CACHE_NAME = 'webgl-static-v5';
+const CACHE_NAME = 'webgl-portfolio-v7'; // 🔥 UPDATED: Fix module script MIME type issues
+const STATIC_CACHE_NAME = 'webgl-static-v7';
 
 // Critical assets to cache immediately (smaller assets first)
 const CRITICAL_ASSETS = [
   '/',
   '/main.js',
   '/index.html',
-  '/font-2.json', // Font data
+  // Removed: '/font-2.json' - not used, saves 251KB from critical cache
 ];
 
 // Large assets to cache on demand (don't block initial load)
@@ -33,6 +33,14 @@ const BLACKLISTED_ASSETS = [
   '/optimized_models/character_minimal_draco.glb',
   '/optimized_models/character_minimal.glb',
   '/optimized_models/character_draco_compressed.glb',
+  // Recently deleted unused files
+  '/optimized_models/character_bangkok.glb',
+  '/optimized_models/character_bangkok_draco.glb',
+  '/optimized_models/character_bangkok_simple.glb',
+  '/optimized_models/character_clean.glb',
+  '/optimized_models/character_clean_4anims.glb',
+  '/optimized_models/character_ultra_light.glb',
+  '/optimized_models/character_ultra_light_4anims.glb',
 ];
 
 // Install event - cache critical assets
@@ -62,13 +70,12 @@ self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys()
       .then((cacheNames) => {
-        // Delete ALL old caches to force refresh
+        // 🔥 DELETE ALL CACHES to fix MIME type issues
+        console.log('🗑️ Service Worker: Clearing ALL caches to fix module loading issues');
         return Promise.all(
           cacheNames.map((cacheName) => {
-            if (cacheName !== CACHE_NAME && cacheName !== STATIC_CACHE_NAME) {
-              console.log('🗑️ Service Worker: Deleting old cache:', cacheName);
-              return caches.delete(cacheName);
-            }
+            console.log('🗑️ Service Worker: Deleting cache:', cacheName);
+            return caches.delete(cacheName);
           })
         );
       })
@@ -211,6 +218,16 @@ async function handleCriticalAsset(request) {
 async function handleGenericRequest(request) {
   try {
     const response = await fetch(request);
+    
+    // 🔥 FIX: Don't cache JavaScript modules with wrong MIME types
+    if (request.url.includes('.js') && response.ok) {
+      const contentType = response.headers.get('content-type');
+      if (!contentType || !contentType.includes('javascript')) {
+        console.log('🚨 Service Worker: Skipping JS file with wrong MIME type:', request.url, contentType);
+        return response; // Don't cache, just return
+      }
+    }
+    
     return response;
   } catch (error) {
     // Try cache as fallback
