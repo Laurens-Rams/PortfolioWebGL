@@ -113,7 +113,7 @@ export const tokens = {
   colors: {
     primary: '#000000',      // Black text
     secondary: '#111111',    // Dark gray text
-    alternate: '#ffffff',    // White background
+    alternate: 'transparent',    // Transparent background
     tertiary: '#f5f5f5',     // Light gray background
     accent: '#40E0D0',       // TENDOR turquoise
     muted: '#666666',        // Muted text
