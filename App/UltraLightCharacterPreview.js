@@ -80,8 +80,8 @@ export class UltraLightCharacterPreview extends Group {
       this.mixer = new AnimationMixer(gltf.scene);
       this.animations = gltf.animations;
       
-      // Set up idle animation (same index as the full character)
-      const IDLE_ANIM_INDEX = 148;
+      // Set up idle animation (updated for 4-animation compressed file)
+      const IDLE_ANIM_INDEX = 3; // Was 148, now 3 for compressed file
       
       if (this.animations[IDLE_ANIM_INDEX]) {
         this.idleAction = this.mixer.clipAction(this.animations[IDLE_ANIM_INDEX]);

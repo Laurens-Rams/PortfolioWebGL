@@ -13,10 +13,10 @@ const DEBUG_MODE = true; // 🔥 ENABLE FOR POST-PROCESSING CONTROLS
 // TODO: Verify these animation names match the names in your fuckOFFFF.glb file.
 // These are placeholders based on previously used indices.
 // Use animation indices instead of names for more reliable access
-const IDLE_ANIM_INDEX = 148;
-const CLIMBING_ANIM_INDEX = 5;
-const STANDING_ANIM_INDEX = 110;
-const TURN_AROUND_ANIM_INDEX = 0;
+const IDLE_ANIM_INDEX = 3;        // Was 148, now 3 for compressed file
+const CLIMBING_ANIM_INDEX = 1;    // Was 5, now 1 for compressed file  
+const STANDING_ANIM_INDEX = 2;    // Was 110, now 2 for compressed file
+const TURN_AROUND_ANIM_INDEX = 0; // Stays 0
 // Note: _turnToWallAction will use TURN_AROUND_ANIM_NAME and clone the clip.
 const CROSSFADE_DURATION = 0.25; // seconds for AnimationAction.crossFadeTo
 
