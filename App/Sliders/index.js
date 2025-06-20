@@ -1,6 +1,7 @@
 import { Group, Vector3, MathUtils, AnimationMixer, LoopOnce, LoopRepeat, MeshStandardMaterial, FrontSide } from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
 import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader';
+import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js';
 import { addGLBToTile, addGLBToTileNoAnimation } from './handleGLBModels';
 import { CLIMBING_CONFIG } from '../ClimbingConfig';
 import { UltraLightCharacterPreview } from '../UltraLightCharacterPreview';
@@ -304,11 +305,12 @@ export default class Tiles extends Group {
     // Mark start of full character loading
     performanceMonitor.markCharacterFullStart();
     
-    // Create GLTF loader directly
+    // Create GLTF loader directly with DRACO and Meshopt support
     const dracoLoader = new DRACOLoader();
     dracoLoader.setDecoderPath('/draco/');
     const gltfLoader = new GLTFLoader();
     gltfLoader.setDRACOLoader(dracoLoader);
+    gltfLoader.setMeshoptDecoder(MeshoptDecoder);
     
     gltfLoader.load(
       climberPath, 

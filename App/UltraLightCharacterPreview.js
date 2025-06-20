@@ -10,6 +10,7 @@ import {
 } from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
 import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader';
+import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js';
 import { performanceMonitor } from './PerformanceMonitor.js';
 
 export class UltraLightCharacterPreview extends Group {
@@ -35,11 +36,12 @@ export class UltraLightCharacterPreview extends Group {
 
   async _loadUltraLightCharacter() {
     try {
-      // Create GLTF loader with DRACO support
+      // Create GLTF loader with DRACO and Meshopt support
       const dracoLoader = new DRACOLoader();
       dracoLoader.setDecoderPath('/draco/');
       const gltfLoader = new GLTFLoader();
       gltfLoader.setDRACOLoader(dracoLoader);
+      gltfLoader.setMeshoptDecoder(MeshoptDecoder);
       
       console.log('📂 Loading ultra-light character (7MB)...');
       
