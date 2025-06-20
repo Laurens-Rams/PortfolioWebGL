@@ -79,10 +79,10 @@ class FadeInManager {
   }
 
   fadeInSpline() {
-    // Spline fades in SLOWER for more cinematic background
+    // Spline fades in FASTER for better user experience
     const splineCanvas = document.querySelector('#spline-canvas');
     if (splineCanvas) {
-      splineCanvas.style.transition = 'opacity 3.5s ease-out'; // Slower: 2.5s → 3.5s
+      splineCanvas.style.transition = 'opacity 1.5s ease-out'; // Much faster: 3.5s → 1.5s
       splineCanvas.style.opacity = '1';
       console.log('🔥 Spline fading in slowly...');
     }
@@ -681,7 +681,7 @@ export default class App {
     // 🔥 NOTIFY FADE MANAGER THAT CHARACTER IS READY (WILL FADE IN)
     setTimeout(() => {
       this.fadeInManager.setLoaded('character');
-    }, 1500); // Slightly longer delay for more dramatic effect
+    }, 800); // Reduced delay: 1500ms → 800ms for faster response
   }
 
   _setDPR() {

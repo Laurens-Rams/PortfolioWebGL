@@ -34,6 +34,7 @@ export default class SplineClimbingWall extends Group {
     this._backgroundDiv.style.width = '100%';
     this._backgroundDiv.style.height = '100%';
     this._backgroundDiv.style.zIndex = '-3'; // Behind everything
+    this._backgroundDiv.style.backgroundColor = 'rgb(0, 0, 0)'; // IMMEDIATELY BLACK
     
     // Add background to DOM
     document.body.appendChild(this._backgroundDiv);
@@ -58,7 +59,7 @@ export default class SplineClimbingWall extends Group {
       
       // 🔥 Load Spline using optimized Application API
       
-      // Create canvas element
+      // Create canvas element with immediate black background
       this._canvas = document.createElement('canvas');
       this._canvas.id = 'spline-canvas';
       this._canvas.style.position = 'fixed';
@@ -69,6 +70,7 @@ export default class SplineClimbingWall extends Group {
       this._canvas.style.pointerEvents = 'auto';
       this._canvas.style.zIndex = '-1';
       this._canvas.style.opacity = '0';
+      this._canvas.style.backgroundColor = 'rgb(0, 0, 0)'; // BLACK BACKGROUND IMMEDIATELY
       
       // Performance optimizations
       if (isLowEnd) {
@@ -107,6 +109,9 @@ export default class SplineClimbingWall extends Group {
       
       // Mark Spline loaded
       performanceMonitor.markSplineLoaded();
+      
+      // IMPORTANT: Only make canvas visible after content is fully loaded
+      this._canvas.style.opacity = '0'; // Ensure it's still hidden
       
       // Notify fade manager that Spline is ready
       if (this._fadeInManager) {
