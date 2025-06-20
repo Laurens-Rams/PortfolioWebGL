@@ -1,9 +1,23 @@
 {
   "routes": [
     {
-      "route": "*.glb",
+      "route": "*_compressed.glb",
+      "headers": {
+        "Cache-Control": "public, max-age=31536000, immutable",
+        "Access-Control-Allow-Origin": "*"
+      }
+    },
+    {
+      "route": "*.glb.gz",
       "headers": {
         "Content-Encoding": "gzip",
+        "Cache-Control": "public, max-age=31536000, immutable",
+        "Access-Control-Allow-Origin": "*"
+      }
+    },
+    {
+      "route": "*.glb",
+      "headers": {
         "Cache-Control": "public, max-age=31536000, immutable",
         "Access-Control-Allow-Origin": "*"
       }
@@ -18,14 +32,6 @@
       "route": "*.jpg",
       "headers": {
         "Cache-Control": "public, max-age=31536000, immutable"
-      }
-    },
-    {
-      "route": "/optimized_models/*",
-      "headers": {
-        "Cache-Control": "public, max-age=31536000, immutable",
-        "Content-Encoding": "gzip",
-        "Access-Control-Allow-Origin": "*"
       }
     },
     {
