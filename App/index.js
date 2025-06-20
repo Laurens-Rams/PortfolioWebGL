@@ -699,6 +699,16 @@ export default class App {
     setTimeout(() => {
       this.fadeInManager.setLoaded('character');
     }, 800); // Reduced delay: 1500ms → 800ms for faster response
+
+    // Load character (start with ultra-light, upgrade later)
+    console.log('🔥 Loading character...');
+    this._character = new Character({
+      gl: this._gl,
+      scene: this._scene,
+      camera: this._camera,
+      // Use ultra-light for faster initial load, then upgrade
+      modelPath: '/optimized_models/character_ultra_light_4anims_compressed.glb'
+    });
   }
 
   _setDPR(THREE_MODULE) {

@@ -110,6 +110,17 @@ export class UltraLightCharacterPreview extends Group {
       // Dispatch event that character is ready
       this.dispatchEvent({ type: 'loaded' });
       
+      console.log('✅ Ultra-light character preview ready!');
+      console.log(`⚡ Character Preview: ${performance.now() - startTime}ms`);
+      
+      // Dispatch event to hide skeleton loader
+      window.dispatchEvent(new CustomEvent('characterPreviewReady'));
+      
+      // Notify fade manager that character is loaded
+      if (window.fadeInManager) {
+        window.fadeInManager.setLoaded('character');
+      }
+      
     } catch (error) {
       console.error('❌ Failed to load ultra-light character:', error);
       console.error('❌ Error stack:', error.stack);
