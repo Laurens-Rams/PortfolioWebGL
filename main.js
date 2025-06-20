@@ -5,6 +5,7 @@ import { DragGesture } from '@use-gesture/vanilla';
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
+import { performanceMonitor, PerformanceMonitor } from './App/PerformanceMonitor.js';
 
 // WebGL capability detection
 function checkWebGLSupport() {
@@ -236,3 +237,24 @@ async function initApp() {
 
 // Start the application
 initApp();
+
+// ===== NAVIGATION PERFORMANCE LOGGING =====
+window.addEventListener('load', () => {
+  // Delay by one task to let paint & paint entries settle
+  setTimeout(() => {
+    const navEntry = performance.getEntriesByType('navigation')[0];
+    const fcpEntry = performance.getEntriesByName('first-contentful-paint')[0];
+    if (navEntry) {
+      const timings = {
+        timeToFirstByte: (navEntry.responseStart - navEntry.startTime).toFixed(0) + 'ms',
+        domContentLoaded: navEntry.domContentLoadedEventEnd.toFixed(0) + 'ms',
+        loadEventEnd: navEntry.loadEventEnd.toFixed(0) + 'ms',
+        firstContentfulPaint: fcpEntry ? fcpEntry.startTime.toFixed(0) + 'ms' : 'n/a'
+      };
+      console.log('⏱️ NAVIGATION TIMINGS', timings);
+    }
+  }, 0);
+});
+
+// Start real user monitoring early
+PerformanceMonitor.initRealUserMonitoring();

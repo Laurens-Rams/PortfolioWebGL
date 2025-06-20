@@ -1,9 +1,18 @@
 import glsl from 'vite-plugin-glsl';
 import react from '@vitejs/plugin-react';
 import { defineConfig } from 'vite';
+import compress from 'vite-plugin-compression';
 
 export default defineConfig({
-  plugins: [react(), glsl()],
+  plugins: [react(), glsl(), compress({
+    algorithm: 'brotliCompress',
+    ext: '.br',
+    deleteOriginFile: false,
+  }), compress({
+    algorithm: 'gzip',
+    ext: '.gz',
+    deleteOriginFile: false,
+  })],
   build: {
     // Optimize chunk splitting for better caching
     rollupOptions: {
@@ -22,9 +31,8 @@ export default defineConfig({
     minify: 'terser',
     terserOptions: {
       compress: {
-        drop_console: true, // Remove console.logs in production
+        drop_console: false, // KEEP console logs to view performance metrics in production
         drop_debugger: true,
-        pure_funcs: ['console.log', 'console.warn'], // Remove specific console methods
       },
       mangle: {
         safari10: true // Fix Safari 10 issues

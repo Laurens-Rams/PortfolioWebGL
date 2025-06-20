@@ -17,6 +17,17 @@
     <!-- Removed all prefetches - dynamic loading is more efficient -->
     <!-- This prevents bandwidth competition and cache conflicts -->
     
+    <!-- Critical resource hints for fastest first render -->
+    <link rel="preconnect" href="https://prod.spline.design" crossorigin>
+    <!-- TODO: replace with your CDN/origin domain below if different -->
+    <link rel="preconnect" href="https://artoflaurens.com" crossorigin>
+
+    <!-- Preload hero assets so downloads start while JS parses -->
+    <link rel="preload" href="/optimized_models/character_ultra_light_4anims_compressed.glb" as="fetch" type="model/gltf-binary" crossorigin>
+    <link rel="preload" href="/optimized_models/character_clean_4anims_compressed.glb" as="fetch" type="model/gltf-binary" crossorigin>
+    <link rel="preload" href="https://prod.spline.design/VaU21x4kIO7tSaXb/scene.splinecode" as="fetch" crossorigin fetchpriority="high">
+    <link rel="preload" href="/draco/draco_decoder.wasm" as="fetch" type="application/wasm" crossorigin>
+
     <title>ART's Portfolio - Interactive WebGL Experience</title>
     <style>
       /* 🔥 IMMEDIATE BLACK BACKGROUND - NO WHITE FLASH */

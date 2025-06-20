@@ -10,7 +10,7 @@ const loadThree = async () => {
 import { DragGesture } from '@use-gesture/vanilla';
 // import Stats from 'stats.js'; // 🔥 REMOVED FOR PRODUCTION
 // import * as dat from 'dat.gui'; // 🔥 REMOVED FOR PRODUCTION - saves ~100KB bundle
-import Postprocessing from './Postprocessing';
+// import Postprocessing from './Postprocessing'; // Commented: will be dynamically imported inside _init to avoid blocking first paint
 import { damp } from 'maath/easing';
 
 import Tiles from './Sliders';
@@ -401,14 +401,19 @@ export default class App {
     // Lights
     this._initLights(this.THREE_MODULE);
 
-    // POSTPROCESSING - ENABLED FOR EFFECTS (BEFORE SCENE INIT)
-    this.postprocessing = new Postprocessing({
-      gl: this._gl,
-      scene: this._scene,
-      camera: this._camera,
+    // POSTPROCESSING - DEFERRED: dynamically import after one animation frame
+    requestAnimationFrame(async () => {
+      const { default: Postprocessing } = await import('./Postprocessing');
+      this.postprocessing = new Postprocessing({
+        gl: this._gl,
+        scene: this._scene,
+        camera: this._camera,
+      });
+      console.log('🔥 APP POSTPROCESSING CREATED (lazy):', !!this.postprocessing);
+      if (this._tiles && typeof this._tiles.connectPostProcessingControls === 'function') {
+        this._tiles.connectPostProcessingControls();
+      }
     });
-    
-    console.log('🔥 APP POSTPROCESSING CREATED:', !!this.postprocessing);
 
     this._initScene();
 
