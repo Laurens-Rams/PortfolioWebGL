@@ -1,7 +1,14 @@
 {
   "routes": [
     {
-      "route": "*_compressed.glb",
+      "route": "/optimized_models/character_ultra_light_4anims_compressed.glb",
+      "headers": {
+        "Cache-Control": "public, max-age=31536000, immutable",
+        "Access-Control-Allow-Origin": "*"
+      }
+    },
+    {
+      "route": "/optimized_models/character_clean_4anims_compressed.glb",
       "headers": {
         "Cache-Control": "public, max-age=31536000, immutable",
         "Access-Control-Allow-Origin": "*"
