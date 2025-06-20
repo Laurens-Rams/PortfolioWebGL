@@ -35,6 +35,8 @@ export class UltraLightCharacterPreview extends Group {
   }
 
   async _loadUltraLightCharacter() {
+    const startTime = performance.now(); // Track loading time
+    
     try {
       // Create GLTF loader with DRACO and Meshopt support
       const dracoLoader = new DRACOLoader();
