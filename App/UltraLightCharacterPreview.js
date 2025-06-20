@@ -43,9 +43,10 @@ export class UltraLightCharacterPreview extends Group {
       
       console.log('📂 Loading ultra-light character (7MB)...');
       
-      const gltf = await new Promise((resolve, reject) => {
+      // Add timeout for slow connections
+      const loadPromise = new Promise((resolve, reject) => {
         gltfLoader.load(
-          '/optimized_models/character_ultra_light.glb',
+          '/optimized_models/character_ultra_light_4anims_compressed.glb',
           resolve,
           (progress) => {
             if (progress.total > 0) {
@@ -60,7 +61,14 @@ export class UltraLightCharacterPreview extends Group {
         );
       });
       
-            console.log('✅ Ultra-light character loaded successfully!');
+      // Add 10 second timeout for slow connections
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Loading timeout - falling back to procedural')), 10000);
+      });
+      
+      const gltf = await Promise.race([loadPromise, timeoutPromise]);
+      
+      console.log('✅ Ultra-light character loaded successfully!');
       
       // Mark character preview loaded
       performanceMonitor.markCharacterPreviewLoaded();

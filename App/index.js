@@ -255,10 +255,14 @@ const fadeInManager = new FadeInManager();
 const TL = new TextureLoader();
 
 export default class App {
-  constructor(debug = false) {
+  constructor(debugMode = false) {
+    // 🇹🇭 BANGKOK OPTIMIZATION FLAGS
+    this.deferSplineLoading = false;
+    this.lazyPostProcessing = true;
+    
     this.numParticles = 500;
 
-    this.debug = debug;
+    this.debug = debugMode;
 
     this.mouseX = 0;
     this.mouseY = 0;

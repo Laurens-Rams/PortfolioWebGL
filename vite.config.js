@@ -23,11 +23,19 @@ export default defineConfig({
     terserOptions: {
       compress: {
         drop_console: true, // Remove console.logs in production
-        drop_debugger: true
+        drop_debugger: true,
+        pure_funcs: ['console.log', 'console.warn'], // Remove specific console methods
+      },
+      mangle: {
+        safari10: true // Fix Safari 10 issues
       }
     },
-    // Source maps for debugging (can be disabled for smaller builds)
-    sourcemap: false
+    // Source maps for debugging (disabled for smaller builds)
+    sourcemap: false,
+    // Enable compression
+    reportCompressedSize: true,
+    // Optimize assets
+    assetsInlineLimit: 4096, // Inline small assets
   },
   // Optimize assets
   assetsInclude: ['**/*.glb', '**/*.gltf'],

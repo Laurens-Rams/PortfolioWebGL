@@ -6,6 +6,8 @@
   "scripts": {
     "dev": "vite --host",
     "build": "vite build",
+    "build:azure": "vite build && npm run compress:assets",
+    "compress:assets": "gzip -k dist/assets/*.js && gzip -k dist/assets/*.css",
     "preview": "vite preview"
   },
   "devDependencies": {

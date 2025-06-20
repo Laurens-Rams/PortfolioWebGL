@@ -17,6 +17,57 @@ function checkWebGLSupport() {
   }
 }
 
+// Connection speed detection
+function detectConnectionSpeed() {
+  // Check if Network Information API is available
+  if ('connection' in navigator) {
+    const connection = navigator.connection;
+    const effectiveType = connection.effectiveType;
+    
+    // Return connection quality
+    switch (effectiveType) {
+      case 'slow-2g':
+      case '2g':
+        return 'slow';
+      case '3g':
+        return 'medium';
+      case '4g':
+      default:
+        return 'fast';
+    }
+  }
+  
+  // Fallback: assume medium connection
+  return 'medium';
+}
+
+// Adaptive loading strategy based on connection
+function getLoadingStrategy() {
+  const connectionSpeed = detectConnectionSpeed();
+  
+  switch (connectionSpeed) {
+    case 'slow':
+      return {
+        useUltraLight: false, // Skip ultra-light, go straight to procedural
+        preloadTimeout: 20000, // 20 second timeout
+        enablePreload: false
+      };
+    case 'medium':
+      return {
+        useUltraLight: true,
+        preloadTimeout: 10000, // 10 second timeout
+        enablePreload: false
+      };
+    case 'fast':
+    default:
+      return {
+        useUltraLight: true,
+        preloadTimeout: 5000, // 5 second timeout
+        enablePreload: true
+      };
+  }
+}
+
 // Error handling for fallback
 const errorScreen = document.getElementById('error-screen');
 const errorMessage = document.getElementById('error-message');
@@ -119,6 +170,9 @@ async function initApp() {
 
     // Initialize the app - loading manager handles the rest
     const app = new App(false); // Debug mode disabled - using dialed-in values
+    
+    // 🔥 BANGKOK OPTIMIZATION: Defer Spline loading
+    app.deferSplineLoading = true;
     
     // 🔥 MAKE APP AVAILABLE GLOBALLY FOR BUTTON CLICKS
     window.app = app;

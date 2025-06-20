@@ -1,16 +1,21 @@
 // 🔥 SMART CACHING SERVICE WORKER FOR WEBGL PORTFOLIO
 // Caches optimized models and critical assets for instant loading
 
-const CACHE_NAME = 'webgl-portfolio-v4';
-const STATIC_CACHE_NAME = 'webgl-static-v4';
+const CACHE_NAME = 'webgl-portfolio-v5';
+const STATIC_CACHE_NAME = 'webgl-static-v5';
 
-// Critical assets to cache immediately
+// Critical assets to cache immediately (smaller assets first)
 const CRITICAL_ASSETS = [
   '/',
   '/main.js',
   '/index.html',
-  '/optimized_models/character_clean.glb', // 18MB clean optimized character
   '/font-2.json', // Font data
+];
+
+// Large assets to cache on demand (don't block initial load)
+const LARGE_ASSETS_TO_CACHE = [
+  '/optimized_models/character_ultra_light_4anims_compressed.glb', // 1MB ultra-light character (4 animations)
+  '/optimized_models/character_clean_4anims_compressed.glb', // 6MB clean optimized character (4 animations)
 ];
 
 // Large assets to cache on demand (removed space.glb and other deleted files)

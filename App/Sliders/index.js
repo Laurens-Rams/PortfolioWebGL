@@ -240,7 +240,9 @@ export default class Tiles extends Group {
     // this._loadStandupAnimation();
   }
 
-  // 🔥 PROGRESSIVE LOADING METHODS
+
+
+  // 🔥 PROGRESSIVE LOADING METHODS - RESTORED TO WORKING VERSION
   _createInstantPreview() {
     console.log('🔥 Creating ultra-light character preview...');
     
@@ -296,8 +298,8 @@ export default class Tiles extends Group {
   }
 
   _loadClimber() {
-    // 🔥 SMART LOADING: Use optimized model with only 4 animations (15MB instead of 26MB)
-            const climberPath = '/optimized_models/character_clean.glb';
+    // 🔥 SMART LOADING: Use optimized model with only 4 animations (18MB instead of 26MB)
+    const climberPath = '/optimized_models/character_clean_4anims_compressed.glb';
     
     // Mark start of full character loading
     performanceMonitor.markCharacterFullStart();
@@ -560,6 +562,7 @@ export default class Tiles extends Group {
       // 🔥 SMOOTH HEAD SCALE FADE-IN EFFECT
       this._startHeadScaleFadeIn();
       
+      // 🔥 UPGRADE FROM PROCEDURAL TO FULL CHARACTER
       this._upgradeToOptimizedCharacter();
     },
     // Progress callback

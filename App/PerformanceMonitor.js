@@ -372,6 +372,33 @@ export class PerformanceMonitor {
       console.log('📊 Could not send metrics to server:', error);
     });
   }
+
+  // Add real user monitoring
+  static trackRealUserMetrics() {
+    // Track connection type
+    const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+    const connectionType = connection ? connection.effectiveType : 'unknown';
+    
+    // Track geographic performance
+    const startTime = performance.now();
+    
+    // Send metrics to console (you can later send to analytics)
+    window.addEventListener('load', () => {
+      const loadTime = performance.now() - startTime;
+      console.log('🌍 REAL USER METRICS:', {
+        loadTime: `${loadTime.toFixed(0)}ms`,
+        connectionType,
+        userAgent: navigator.userAgent.substring(0, 50),
+        timestamp: new Date().toISOString(),
+        domain: window.location.hostname
+      });
+    });
+  }
+
+  // Call this in your initialization
+  static initRealUserMonitoring() {
+    this.trackRealUserMetrics();
+  }
 }
 
 // Create global instance
