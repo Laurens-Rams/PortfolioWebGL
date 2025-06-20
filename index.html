@@ -19,9 +19,9 @@
     
     <title>ART's Portfolio - Interactive WebGL Experience</title>
     <style>
-      /* 🔥 TRANSPARENT BODY TO SHOW SPLINE SCENE */
+      /* 🔥 IMMEDIATE BLACK BACKGROUND - NO WHITE FLASH */
       html {
-        background-color: #000000; /* Fallback black for loading */
+        background-color: #000000 !important; /* Force black immediately */
       }
       body, html {
         margin: 0;
@@ -118,7 +118,6 @@
     </style>
   </head>
   <body class="loading">
-    <!-- No loading screen needed - simple fade-in system -->
 
     <!-- Error Screen -->
     <div id="error-screen">
@@ -134,35 +133,6 @@
     </div>
     <script type="module" src="/main.js"></script>
     
-    <!-- Service Worker Registration -->
-    <script>
-      if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('/sw.js?v=7')
-          .then(registration => {
-            console.log('✅ Service Worker registered successfully:', registration.scope);
-            
-            // Force update if there's a waiting service worker
-            if (registration.waiting) {
-              registration.waiting.postMessage({ type: 'SKIP_WAITING' });
-            }
-            
-            // Listen for updates
-            registration.addEventListener('updatefound', () => {
-              const newWorker = registration.installing;
-              if (newWorker) {
-                newWorker.addEventListener('statechange', () => {
-                  if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                    console.log('🔄 New service worker available, refreshing...');
-                    window.location.reload();
-                  }
-                });
-              }
-            });
-          })
-          .catch(error => {
-            console.error('❌ Service Worker registration failed:', error);
-          });
-      }
-    </script>
+    <!-- Service Worker REMOVED - was causing loading delays -->
   </body>
 </html>

@@ -1,16 +1,11 @@
-import {
-  PerspectiveCamera,
-  WebGLRenderer,
-  Scene,
-  Color,
-  Clock,
-  MathUtils,
-  AmbientLight,
-  PointLight,
-  TextureLoader,
-  Frustum,
-  Matrix4,
-} from 'three';
+// 🔥 LAZY IMPORT OPTIMIZATION - Load Three.js only when needed
+let THREE = null;
+const loadThree = async () => {
+  if (!THREE) {
+    THREE = await import('three');
+  }
+  return THREE;
+};
 
 import { DragGesture } from '@use-gesture/vanilla';
 // import Stats from 'stats.js'; // 🔥 REMOVED FOR PRODUCTION
@@ -252,7 +247,8 @@ class FadeInManager {
 
 const fadeInManager = new FadeInManager();
 
-const TL = new TextureLoader();
+// TextureLoader will be created dynamically when needed
+let TL = null;
 
 export default class App {
   constructor(debugMode = false) {
@@ -301,10 +297,25 @@ export default class App {
     this.lastCullCheck = 0;
     this.cullCheckInterval = 100; // Check every 100ms
 
-    this._init();
+    this._init().catch(error => {
+      console.error('🔥 Failed to initialize app:', error);
+      window.showError && window.showError('Failed to load 3D experience. Please refresh the page.');
+    });
   }
 
-  _init() {
+  async _init() {
+    // 🔥 LOAD THREE.JS DYNAMICALLY TO AVOID BLOCKING
+    console.log('🔥 Loading Three.js dynamically...');
+    this.THREE_MODULE = await loadThree();
+    
+    // Set global THREE for frustum culling
+    THREE = this.THREE_MODULE;
+    
+    // Create TextureLoader now that Three.js is loaded
+    TL = new this.THREE_MODULE.TextureLoader();
+    
+    console.log('🔥 Three.js loaded, initializing app...');
+    
     // Inject global typography styles first
     injectGlobalStyles();
     
@@ -313,7 +324,7 @@ export default class App {
     this._isLowEnd = this._isMobile || navigator.hardwareConcurrency <= 4;
     
     // Renderer - Optimized Performance Settings
-    this._gl = new WebGLRenderer({
+    this._gl = new this.THREE_MODULE.WebGLRenderer({
       canvas: document.querySelector('#canvas_main'),
       antialias: !this._isMobile, // Disable AA on mobile for performance
       stencil: false, // Disabled stencil buffer - not needed with Spline background
@@ -350,11 +361,11 @@ export default class App {
     gl.cullFace(gl.BACK);
     gl.frontFace(gl.CCW);
 
-    this._setDPR();
+    this._setDPR(this.THREE_MODULE);
 
     // Camera - Optimized settings
     const aspect = window.innerWidth / window.innerHeight;
-    this._camera = new PerspectiveCamera(50, aspect, 0.1, 20000); // Reduced far plane
+    this._camera = new this.THREE_MODULE.PerspectiveCamera(50, aspect, 0.1, 20000); // Reduced far plane
     this._camera.filmGauge = 35; // Standard film gauge for better quality
     this._camera.filmOffset = 0;
     this._camera.position.set(-450, CLIMBING_CONFIG.CAMERA_START_Y, -300); // Camera shifted to MAXIMUM left for ultimate cinematic composition
@@ -365,8 +376,8 @@ export default class App {
     this._resize();
 
     // Scene
-    this._scene = new Scene();
-    // this._scene.background = new Color(0x000000); // Black background
+    this._scene = new this.THREE_MODULE.Scene();
+    // this._scene.background = new this.THREE_MODULE.Color(0x000000); // Black background
 
     // 🔥 PERFORMANCE DISPLAY RESTORED
     // Performance monitoring and loading display are already initialized automatically
@@ -385,10 +396,10 @@ export default class App {
     // Light controls removed - post-processing controls only
 
     // Clock for delta
-    this._clock = new Clock();
+    this._clock = new this.THREE_MODULE.Clock();
 
     // Lights
-    this._initLights();
+    this._initLights(this.THREE_MODULE);
 
     // POSTPROCESSING - ENABLED FOR EFFECTS (BEFORE SCENE INIT)
     this.postprocessing = new Postprocessing({
@@ -411,14 +422,14 @@ export default class App {
     this._animate();
   }
 
-  _initLights() {
+  _initLights(THREE_MODULE) {
     // Ambient moonlight - cool blue tint for night atmosphere
-    this._ambientLight = new AmbientLight(0x3a5a85); // Darker cool blue moonlight color
+    this._ambientLight = new THREE_MODULE.AmbientLight(0x3a5a85); // Darker cool blue moonlight color
     this._ambientLight.intensity = 1.0; // NEW DEFAULT from UI
     this._scene.add(this._ambientLight);
 
     // Key moonlight - cool white with blue tint (NEW DEFAULTS from UI)
-    this._keyLight = new PointLight(0x9bb5d6, 1, 28500); // Cool moonlight color
+    this._keyLight = new THREE_MODULE.PointLight(0x9bb5d6, 1, 28500); // Cool moonlight color
     this._keyLight.position.set(3500, -3900, 5000); // NEW DEFAULT from UI
     this._keyLight.intensity = 84000; // NEW DEFAULT from UI
     this._keyLight.distance = 28500; // NEW DEFAULT from UI
@@ -426,7 +437,7 @@ export default class App {
     this._scene.add(this._keyLight);
 
     // Add a secondary moonlight from above for atmospheric effect (NEW DEFAULTS from UI)
-    this._moonLight = new PointLight(0x6a8bc7, 1, 12500); // Soft blue moonlight
+    this._moonLight = new THREE_MODULE.PointLight(0x6a8bc7, 1, 12500); // Soft blue moonlight
     this._moonLight.position.set(-3200, 2600, -1000); // NEW DEFAULT from UI
     this._moonLight.intensity = 19000; // NEW DEFAULT from UI
     this._moonLight.distance = 12500; // NEW DEFAULT from UI
@@ -684,12 +695,12 @@ export default class App {
     }, 800); // Reduced delay: 1500ms → 800ms for faster response
   }
 
-  _setDPR() {
+  _setDPR(THREE_MODULE) {
     // Performance-optimized DPR settings
     let maxDPR = this._isLowEnd ? 1.0 : 1.5; // Reduced for better performance
     if (this._isMobile) maxDPR = Math.min(maxDPR, 1.25); // Conservative mobile quality
     
-    const dpr = MathUtils.clamp(window.devicePixelRatio, 1, maxDPR);
+    const dpr = THREE_MODULE.MathUtils.clamp(window.devicePixelRatio, 1, maxDPR);
     this._gl.setPixelRatio(dpr);
     
     console.log('🔥 WebGL Performance - DPR:', dpr, 'Max DPR:', maxDPR, 'Device DPR:', window.devicePixelRatio);
@@ -832,9 +843,12 @@ export default class App {
   // _runPerformanceBenchmark() { ... } - REMOVED
 
   _performFrustumCulling() {
+    // Only perform frustum culling if Three.js is loaded
+    if (!THREE) return;
+    
     // Create frustum from camera
-    const frustum = new Frustum();
-    const cameraMatrix = new Matrix4();
+    const frustum = new THREE.Frustum();
+    const cameraMatrix = new THREE.Matrix4();
     cameraMatrix.multiplyMatrices(this._camera.projectionMatrix, this._camera.matrixWorldInverse);
     frustum.setFromProjectionMatrix(cameraMatrix);
     
@@ -973,7 +987,9 @@ export default class App {
 
   _resize() {
     this._gl.setSize(window.innerWidth, window.innerHeight);
-    this._setDPR();
+    if (this.THREE_MODULE) {
+      this._setDPR(this.THREE_MODULE);
+    }
 
     const aspect = window.innerWidth / window.innerHeight;
     this._camera.aspect = aspect;
