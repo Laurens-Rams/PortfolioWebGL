@@ -1,18 +1,9 @@
 import glsl from 'vite-plugin-glsl';
 import react from '@vitejs/plugin-react';
 import { defineConfig } from 'vite';
-import compress from 'vite-plugin-compression';
 
 export default defineConfig({
-  plugins: [react(), glsl(), compress({
-    algorithm: 'brotliCompress',
-    ext: '.br',
-    deleteOriginFile: false,
-  }), compress({
-    algorithm: 'gzip',
-    ext: '.gz',
-    deleteOriginFile: false,
-  })],
+  plugins: [react(), glsl()],
   build: {
     // Optimize chunk splitting for better caching
     rollupOptions: {
