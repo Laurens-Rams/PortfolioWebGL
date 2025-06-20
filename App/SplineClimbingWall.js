@@ -68,7 +68,7 @@ export default class SplineClimbingWall extends Group {
       this._canvas.style.width = '100%';
       this._canvas.style.height = '100%';
       this._canvas.style.pointerEvents = 'auto';
-      this._canvas.style.zIndex = '-1';
+      this._canvas.style.zIndex = '-3'; // Behind everything including character preview
       this._canvas.style.opacity = '0';
       this._canvas.style.backgroundColor = 'rgb(0, 0, 0)'; // BLACK BACKGROUND IMMEDIATELY
       
@@ -80,6 +80,11 @@ export default class SplineClimbingWall extends Group {
       
       // Add to DOM
       document.body.appendChild(this._canvas);
+      
+      // 🔥 PREVENT SPLINE FROM LOADING ITS OWN THREE.JS
+      if (!window.THREE) {
+        window.THREE = await import('three');
+      }
       
       // Load Spline Application directly (should be much faster)
       const { Application } = await import('@splinetool/runtime');

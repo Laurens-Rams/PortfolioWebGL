@@ -4,6 +4,9 @@ import { defineConfig } from 'vite';
 
 export default defineConfig({
   plugins: [react(), glsl()],
+  optimizeDeps: { 
+    exclude: ['three'] // Prevent Spline from bundling its own Three.js
+  },
   build: {
     // Optimize chunk splitting for better caching
     rollupOptions: {
@@ -11,8 +14,8 @@ export default defineConfig({
         manualChunks: {
           'three': ['three'],
           'postprocessing': ['postprocessing'],
-          'drei': ['@react-three/drei'],
-          'vendor': ['@use-gesture/vanilla', 'dat.gui', 'maath']
+          'vendor': ['@use-gesture/vanilla', 'dat.gui', 'maath'],
+          'spline': ['@splinetool/runtime'] // Separate spline chunk
         }
       }
     },

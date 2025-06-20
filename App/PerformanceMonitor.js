@@ -398,6 +398,17 @@ export class PerformanceMonitor {
   // Call this in your initialization
   static initRealUserMonitoring() {
     this.trackRealUserMetrics();
+    
+    // 🔥 SEND METRICS TO AZURE FUNCTION (optional)
+    // Uncomment and replace with your Azure Function URL
+    // const metricsEndpoint = 'https://your-function-app.azurewebsites.net/api/metrics';
+    // window.addEventListener('load', () => {
+    //   setTimeout(() => {
+    //     if (window.performanceMonitor) {
+    //       window.performanceMonitor.sendToServer(metricsEndpoint);
+    //     }
+    //   }, 5000); // Send after 5s to capture full metrics
+    // });
   }
 }
 

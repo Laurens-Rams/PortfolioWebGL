@@ -68,6 +68,7 @@ class FadeInManager {
     // Get the main WebGL canvas and apply fade transition
     const webglCanvas = document.querySelector('#canvas_main');
     if (webglCanvas) {
+      webglCanvas.style.zIndex = '0'; // Ensure above spline canvas
       webglCanvas.style.transition = 'opacity 1.2s ease-out'; // Faster: 2s → 1.2s
       webglCanvas.style.opacity = '1';
     }
