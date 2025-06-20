@@ -1,5 +1,5 @@
 // 🔥 COMING SOON TOGGLE - SET TO false WHEN READY TO LAUNCH
-const COMING_SOON = true;
+const COMING_SOON = false;
 
 import { DragGesture } from '@use-gesture/vanilla';
 import React from 'react';
@@ -120,23 +120,49 @@ async function initApp() {
     // Initialize the app - loading manager handles the rest
     const app = new App(false); // Debug mode disabled - using dialed-in values
     
-    // 🔥 MAKE APP AND STATE AVAILABLE GLOBALLY FOR BUTTON CLICKS
+    // 🔥 MAKE APP AVAILABLE GLOBALLY FOR BUTTON CLICKS
     window.app = app;
-
-    // Import and set up state manager
-    const { default: appState } = await import('./App/StateManager.js');
-    window.appState = appState;
+    
+    // StateManager is already imported and initialized in App/index.js
+    // window.appState will be set by the app itself to ensure same instance
 
     // Restore scroll behavior
     history.scrollRestoration = "manual";
 
     // Global error handling
     window.addEventListener('error', (event) => {
+      // Filter out null errors and other non-critical errors
+      if (event.error === null || event.error === undefined) {
+        // Silent handling of null errors - these are often from external scripts
+        return;
+      }
+      
+      // Filter out UUID script errors (these are from browser extensions or external scripts)
+      if (event.filename && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/.test(event.filename)) {
+        // Silent handling of UUID-named script errors
+        return;
+      }
+      
+      // Filter out syntax errors from external scripts
+      if (event.error && event.error.message && event.error.message.includes('Unexpected token')) {
+        // Silent handling of syntax errors from external scripts
+        return;
+      }
+      
       console.error('Global error:', event.error);
-      showError('An unexpected error occurred. Please refresh the page to try again.');
+      
+      // Only show user-facing error for critical errors
+      if (event.error && event.error.message && !event.error.message.includes('Script error')) {
+        showError('An unexpected error occurred. Please refresh the page to try again.');
+      }
     });
 
     window.addEventListener('unhandledrejection', (event) => {
+      // Filter out null rejections
+      if (event.reason === null || event.reason === undefined) {
+        return;
+      }
+      
       console.error('Unhandled promise rejection:', event.reason);
       showError('An unexpected error occurred. Please refresh the page to try again.');
     });

@@ -14,7 +14,7 @@ export default class UIOverlay {
     this.components = [];
     this.timings = this.app._getScrollTimings(); // GET CENTRALIZED TIMINGS
     this.init();
-    this.setupScrollBasedClickDetection(); // 🔥 ADD SCROLL-BASED CLICK DETECTION
+    // 🔥 REMOVED: Scroll-based click detection - now using direct button clicks
   }
 
   init() {
@@ -79,6 +79,13 @@ export default class UIOverlay {
       timing: this.timings.getInTouch
     });
 
+    // Case Study Preview (85-100%) - At the very end, treated as motivation text
+    this.components.push({
+      type: 'motivation-text',
+      element: this.createCaseStudyPreview(),
+      timing: this.timings.caseStudyPreview
+    });
+
     // Copyright (75-95%) - Same timing as bio - DISABLED FOR NOW
     if (this.timings.copyright) {
       this.components.push({
@@ -89,59 +96,126 @@ export default class UIOverlay {
     }
   }
 
-  // 🔥 SCROLL-BASED CLICK DETECTION SYSTEM
-  setupScrollBasedClickDetection() {
-    console.log('🔥 Setting up scroll-based click detection for component 3 area');
+  // 🔥 GLOBAL CASE STUDY HOVER DETECTION - WORKS WITHOUT INTERFERING WITH SPLINE
+  setupGlobalCaseStudyHover(caseStudyElement) {
+    if (this.globalHoverHandlerAdded) return; // Prevent multiple handlers
+    this.globalHoverHandlerAdded = true;
     
-    // Track mouse position
-    this.mouseX = 0;
-    this.mouseY = 0;
+    let isHoveringCaseStudy = false;
     
-    // Mouse tracking
     document.addEventListener('mousemove', (e) => {
-      this.mouseX = e.clientX;
-      this.mouseY = e.clientY;
-    });
-    
-    // Click detection - ONLY INTERCEPTS CLICKS IN BIO RANGE
-    document.addEventListener('click', (e) => {
-      const currentScrollProgress = this.app._currentScrollOffset || 0;
-      const screenWidth = window.innerWidth;
-      const screenHeight = window.innerHeight;
+      if (!caseStudyElement || caseStudyElement.style.opacity === '0') return;
       
-      // Check if we're in the BIO DESCRIPTION scroll range (74% - 100% - STARTS EARLIER)
-      const isInBioRange = currentScrollProgress >= 0.74 && currentScrollProgress <= 1.0;
+      // Get case study element bounds
+      const rect = caseStudyElement.getBoundingClientRect();
+      const mouseX = e.clientX;
+      const mouseY = e.clientY;
       
-      // 🔥 ONLY INTERCEPT CLICKS IF WE'RE IN BIO RANGE - LET SPLINE HANDLE OTHERS
-      if (!isInBioRange) {
-        // Not in bio range - let Spline handle the click normally
-        return;
+      // Check if mouse is within case study bounds
+      const isInBounds = mouseX >= rect.left && mouseX <= rect.right && 
+                        mouseY >= rect.top && mouseY <= rect.bottom;
+      
+      const hoverImg = document.querySelector('.case-study-hover-image');
+      
+      if (isInBounds && !isHoveringCaseStudy) {
+        // Mouse entered case study area
+        isHoveringCaseStudy = true;
+        if (hoverImg) {
+          hoverImg.style.opacity = '1';
+          hoverImg.style.transform = 'translate(-50%, 0%)'; // Position below mouse instead of centered
+          hoverImg.style.left = mouseX + 'px';
+          hoverImg.style.top = (mouseY + 20) + 'px'; // Add 50px offset below mouse
+        }
+        
+        // Button-specific hover effects if hovering over button
+        const button = caseStudyElement.querySelector('.case-study-button');
+        const buttonRect = button?.getBoundingClientRect();
+        if (button && buttonRect && 
+            mouseX >= buttonRect.left && mouseX <= buttonRect.right && 
+            mouseY >= buttonRect.top && mouseY <= buttonRect.bottom) {
+          button.style.opacity = '0.7';
+          button.style.transform = 'translateY(-2px)';
+          const arrow = button.querySelector('span');
+          if (arrow) arrow.style.transform = 'translateY(-2px)';
+        }
+        
+      } else if (!isInBounds && isHoveringCaseStudy) {
+        // Mouse left case study area
+        isHoveringCaseStudy = false;
+        if (hoverImg) {
+          hoverImg.style.opacity = '0';
+        }
+        
+        // Reset button hover effects
+        const button = caseStudyElement.querySelector('.case-study-button');
+        if (button) {
+          button.style.opacity = '1';
+          button.style.transform = 'translateY(0)';
+          const arrow = button.querySelector('span');
+          if (arrow) arrow.style.transform = 'translateY(0)';
+        }
+        
+      } else if (isInBounds && isHoveringCaseStudy) {
+        // Mouse moving within case study area - update image position
+        if (hoverImg && hoverImg.style.opacity !== '0') {
+          hoverImg.style.left = mouseX + 'px';
+          hoverImg.style.top = (mouseY - 320) + 'px'; // Keep 50px offset below mouse
+        }
+        
+        // Update button hover state
+        const button = caseStudyElement.querySelector('.case-study-button');
+        const buttonRect = button?.getBoundingClientRect();
+        if (button && buttonRect) {
+          const isOverButton = mouseX >= buttonRect.left && mouseX <= buttonRect.right && 
+                              mouseY >= buttonRect.top && mouseY <= buttonRect.bottom;
+          
+          if (isOverButton) {
+            button.style.opacity = '0.7';
+            button.style.transform = 'translateY(-2px)';
+            const arrow = button.querySelector('span');
+            if (arrow) arrow.style.transform = 'translateY(-2px)';
+          } else {
+            button.style.opacity = '1';
+            button.style.transform = 'translateY(0)';
+            const arrow = button.querySelector('span');
+            if (arrow) arrow.style.transform = 'translateY(0)';
+          }
+        }
       }
+    });
+  }
+
+  // 🔥 GLOBAL CASE STUDY CLICK DETECTION - QUICK AND DIRTY SOLUTION
+  setupGlobalCaseStudyClickDetection() {
+    if (this.globalClickHandlerAdded) return; // Prevent multiple handlers
+    this.globalClickHandlerAdded = true;
+    
+    document.addEventListener('click', (e) => {
+      // Check if click is on case study button area (but make it larger)
+      const button = document.querySelector('.case-study-button[data-case-study-trigger="true"]');
+      if (!button) return;
       
-      // Bio Description click area - EXPANDED based on your clicks
-      const clickArea = {
-        left: 0,
-        right: screenWidth * 0.6,  // Left 60% of screen (bio text area)
-        top: screenHeight * 0.0,   // FULL HEIGHT - top to bottom
-        bottom: screenHeight * 1.0
+      // Get button bounds and expand them significantly
+      const rect = button.getBoundingClientRect();
+      const clickX = e.clientX;
+      const clickY = e.clientY;
+      
+      // Expand button clickable area: 200px left, 100px right, 100px up, 50px down
+      const expandedRect = {
+        left: rect.left - 200,  // Extend far left to cover title and description
+        right: rect.right + 100,
+        top: rect.top - 100,    // Extend up to cover title and description
+        bottom: rect.bottom + 50
       };
       
-      const isInClickArea = this.mouseX >= clickArea.left && 
-                           this.mouseX <= clickArea.right && 
-                           this.mouseY >= clickArea.top && 
-                           this.mouseY <= clickArea.bottom;
-      
-      if (isInClickArea) {
-        console.log('🔥 BIO AREA CLICK DETECTED - LAUNCHING CASE STUDY!', {
-          scrollProgress: (currentScrollProgress * 100).toFixed(1) + '%',
-          mousePosition: { x: this.mouseX, y: this.mouseY },
-          clickArea
-        });
+      // Check if click is within expanded button area
+      if (clickX >= expandedRect.left && clickX <= expandedRect.right && 
+          clickY >= expandedRect.top && clickY <= expandedRect.bottom) {
         
         e.preventDefault();
         e.stopPropagation();
         
-        // Trigger case study
+        // Trigger case study transition
         if (window.appState) {
           const scrollOffset = this.app._currentScrollOffset || 0;
           window.appState.transitionToCaseStudy(
@@ -151,24 +225,10 @@ export default class UIOverlay {
             window.app?._climbingWall
           );
         }
-        
-        this.showClickFeedback(this.mouseX, this.mouseY);
-        return;
       }
-      
-      // Debug logging for misses ONLY in bio range
-      console.log('🔥 CLICK MISS IN BIO RANGE - PASSING TO SPLINE:', {
-        scrollProgress: (currentScrollProgress * 100).toFixed(1) + '%',
-        mouseXPercent: ((this.mouseX / screenWidth) * 100).toFixed(1) + '%',
-        mouseYPercent: ((this.mouseY / screenHeight) * 100).toFixed(1) + '%',
-        clickArea
-      });
-      
-      // 🔥 CRITICAL: Let the click pass through to Spline
-      return;
-    });
+    }, true); // Use capture phase to intercept before other handlers
   }
-  
+
   // 🔥 VISUAL FEEDBACK FOR SCROLL-BASED CLICKS
   showClickFeedback(x, y) {
     const feedback = document.createElement('div');
@@ -273,9 +333,9 @@ export default class UIOverlay {
           margin: 0 0 ${globalTypography.h2.marginBottom} 0;
           letter-spacing: ${globalTypography.h2.letterSpacing};
           color: white;
-          max-width: 500px;
+          max-width: 710px;
         ">
-          Hey! I'm an interaction design graduate studying Creative Computing at University of Arts London.<br><br> I'm excited about creating digital experiences that move (you). My background is a mix of interaction design, motion, and enough coding to bring ideas to life.
+          Hey! I'm an inteaction design graduate studying Creative Computing at University of Arts London.<br><br> I'm excited about creating digital experiences that move (you). My background blends interaction design, motion, and enough coding to bring ideas to life.
         </h2>
       `;
     } else {
@@ -295,7 +355,7 @@ export default class UIOverlay {
           display: grid;
           grid-template-columns: repeat(2, 1fr);
           gap: 1rem;
-          width: 516px;
+          width: 675px;
         ">
           ${['Creative Coding', 'UI/UX Design', 'Three.js/WebGL', 'Motion Design', 'React/Next.js', 'Brand Design'].map(skill => `
             <div style="
@@ -440,6 +500,130 @@ export default class UIOverlay {
     return element;
   }
 
+  createCaseStudyPreview() {
+    const element = document.createElement('div');
+    element.className = 'ui-component case-study-preview';
+    element.className = 'ui-component'; // 🔥 ADD CLASS FOR TRANSITION CONTROLLER
+    element.style.cssText = `
+      position: fixed;
+      left: 5vh;
+      top: 50%;
+      color: white;
+      z-index: 1001;
+      pointer-events: none;
+      transform: translateY(calc(-50% + -30vh));
+    `;
+    
+    // Create hover image element (hidden by default)
+    const hoverImage = document.createElement('div');
+    hoverImage.className = 'case-study-hover-image';
+    hoverImage.style.cssText = `
+      position: fixed;
+      width: 300px;
+      height: 200px;
+      background: url('/thumbnail.png') center/cover;
+      pointer-events: none;
+      z-index: 99999;
+      opacity: 0;
+      transform: translate(-50%, -100%);
+      transition: opacity 0.3s ease, transform 0.3s ease;
+      border-radius: 8px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    `;
+    document.body.appendChild(hoverImage);
+    
+    element.innerHTML = `
+      <h2 style="
+        font-size: ${globalTypography.h2.fontSize};
+        font-weight: 700;
+        line-height: ${globalTypography.h2.lineHeight};
+        margin: 0 0 ${globalTypography.h2.marginBottom} 0;
+        letter-spacing: ${globalTypography.h2.letterSpacing};
+        color: white;
+        max-width: 665px;
+      ">TENDOR: Mobile Climbing App</h2>
+      
+      <p style="
+        font-size: ${globalTypography.body.fontSize};
+        font-weight: ${globalTypography.body.fontWeight};
+        line-height: ${globalTypography.body.lineHeight};
+        letter-spacing: ${globalTypography.body.letterSpacing};
+        color: rgba(255, 255, 255, 0.9);
+        margin: 0 0 24px 0;
+        max-width: 645px;
+      ">A motion-tracking climbing app that shows you beta from top climbers, helps you spot technique mistakes and identify areas for improvement, and projects personalized route solutions directly on the wall</p>
+      
+      <div class="case-study-button" data-case-study-trigger="true" style="
+        display: inline-block;
+        font-size: ${globalTypography.body.fontSize};
+        font-weight: ${globalTypography.body.fontWeight};
+        line-height: ${globalTypography.body.lineHeight};
+        letter-spacing: ${globalTypography.body.letterSpacing};
+        color: rgba(255, 255, 255, 0.9);
+        text-decoration: none;
+        transition: all 0.3s ease;
+        cursor: pointer;
+        pointer-events: none;
+      ">
+        View Case Study <span style="display: inline-block; transition: transform 0.3s ease;">↗</span>
+      </div>
+    `;
+    
+    // Add hover events to the entire case study section
+    const showHoverImage = (event) => {
+      const hoverImg = document.querySelector('.case-study-hover-image');
+      if (hoverImg) {
+        hoverImg.style.opacity = '1';
+        hoverImg.style.transform = 'translate(-50%, -40%)';
+        hoverImg.style.left = event.clientX + 'px';
+        hoverImg.style.top = event.clientY + 'px';
+      }
+      
+      // Button-specific hover effects
+      const button = element.querySelector('.case-study-button');
+      if (button && event.target.closest('.case-study-button')) {
+        button.style.opacity = '0.7';
+        button.style.transform = 'translateY(-2px)';
+        const arrow = button.querySelector('span');
+        if (arrow) arrow.style.transform = 'translateX(4px)';
+      }
+    };
+    
+    const hideHoverImage = (event) => {
+      const hoverImg = document.querySelector('.case-study-hover-image');
+      if (hoverImg) {
+        hoverImg.style.opacity = '0';
+      }
+      
+      // Reset button-specific hover effects
+      const button = element.querySelector('.case-study-button');
+      if (button) {
+        button.style.opacity = '1';
+        button.style.transform = 'translateY(0)';
+        const arrow = button.querySelector('span');
+        if (arrow) arrow.style.transform = 'translateX(0)';
+      }
+    };
+    
+    const updateHoverImagePosition = (event) => {
+      const hoverImg = document.querySelector('.case-study-hover-image');
+      if (hoverImg && hoverImg.style.opacity !== '0') {
+        hoverImg.style.left = event.clientX + 'px';
+        hoverImg.style.top = event.clientY + 'px';
+      }
+    };
+    
+    this.overlay.appendChild(element);
+    
+    // Add global mouse tracking for case study hover (doesn't interfere with Spline)
+    this.setupGlobalCaseStudyHover(element);
+    
+    // Add global click detection for case study button
+    this.setupGlobalCaseStudyClickDetection();
+    
+    return element;
+  }
+
   update(scrollProgress) {
     this.components.forEach(component => {
       const { element, timing, type } = component;
@@ -473,24 +657,28 @@ export default class UIOverlay {
           
           if (element.innerHTML.includes('How I move through')) {
             // Component 2: Start lower on screen (not almost outside top)
-            startY = -25; // Start lower than before (-50vh was too high)
+            startY = -15; // Start lower than before (-50vh was too high)
             endY = 10;    // End closer to screen
           } else if (element.innerHTML.includes('Hey!')) {
             // Bio Description: Same as component 3 positioning but moves down more
             startY = -25; // Same starting position as component 3
             endY = 10;    // Move down more than component 3 (was 20)
+          } else if (element.innerHTML.includes('TENDOR: Mobile Climbing App')) {
+            // Case Study: Move further down at the end
+            startY = -10; // Same starting position as other components
+            endY = 27;    // Move further down at the end
           } else {
-            // Component 3 (case study): Same movement range as component 2 for same speed
+            // Component 3 (skills): Same movement range as component 2 for same speed
             startY = -25; // Same starting position as component 2
-            endY = 20;    // Same ending position as component 2
+            endY = 23;    // Same ending position as component 2
           }
           
           translateY = startY + (componentProgress * (endY - startY));
           
           // FADE BEHAVIOR: fade in at 95% visible, fade out starting at 5% remaining
-          // SPECIAL CASE: Bio description never fades out
-          if (element.innerHTML.includes('I feel a tension.')) {
-            // Bio Description: Fade in but never fade out
+          // SPECIAL CASE: Bio description and case study never fade out
+          if (element.innerHTML.includes('I feel a tension.') || element.innerHTML.includes('TENDOR: Mobile Climbing App')) {
+            // Bio Description and Case Study: Fade in but never fade out
             const range = timing.end - timing.start;
             const fadeInPoint = timing.start + (range * (1 - this.timings.globalFadeInThreshold));
             
@@ -500,6 +688,7 @@ export default class UIOverlay {
             } else {
               opacity = 1; // Stay visible, never fade out
             }
+
           } else {
             // All other motivation texts: normal fade behavior
             const range = timing.end - timing.start;
@@ -556,7 +745,7 @@ export default class UIOverlay {
             opacity = 1; // Stay visible, no fade out
           }
           
-          // Move down exactly like description (10vh)
+                    // Move down exactly like description (10vh)
           const footerMoveY = componentProgress * 3; // TINY movement - only 3vh instead of 10vh
           element.style.transform = `translateY(${footerMoveY}vh)`;
         }
@@ -565,12 +754,21 @@ export default class UIOverlay {
       // Apply opacity
       element.style.opacity = opacity;
       
-      // Contact Section should never block clicks - only its buttons need pointer events
+      // Handle pointer events for different component types
       if (type === 'contact-section') {
         // Contact section container should always pass through clicks
         element.style.pointerEvents = 'none';
+      } else if (type === 'motivation-text' && element.innerHTML.includes('TENDOR: Mobile Climbing App')) {
+        // Case study: Keep pointer events disabled to not interfere with Spline
+        element.style.pointerEvents = 'none';
+        const button = element.querySelector('.case-study-button');
+        if (button) {
+          button.style.position = 'relative';
+          button.style.zIndex = '10000'; // Ensure it's above everything
+          button.style.pointerEvents = 'none'; // Let clicks pass through, global handler will catch them
+        }
       } else {
-        // Other components can have normal pointer events
+        // Other components have normal pointer events
         element.style.pointerEvents = opacity > 0 ? 'auto' : 'none';
       }
       

@@ -250,6 +250,11 @@ class AppStateManager {
     this.emit('fadeOutWebGL');
     this.emit('fadeOutUI');
     
+    // 🔥 FADE BACKGROUND TO DARK DURING TRANSITION - SIMPLE OVERLAY
+    if (splineApp && splineApp.fadeBackgroundToDark) {
+      splineApp.fadeBackgroundToDark();
+    }
+    
     // Wait for fade
     await this.wait(300); // 🔥 FASTER FADE: Match the 0.3s character transition
     
@@ -283,10 +288,29 @@ class AppStateManager {
     this.emit('transitionComplete', { to: 'case-study' });
     
     console.log('🔥 Transitioned to case study with preserved state');
+    
+    // Debug: Check case study container visibility
+    setTimeout(() => {
+      const caseStudyElement = document.querySelector('#case-study-container') || 
+                              document.querySelector('.case-study-container') ||
+                              document.querySelector('[data-case-study]');
+      console.log('🔥 CASE STUDY CONTAINER DEBUG:', {
+        element: !!caseStudyElement,
+        display: caseStudyElement?.style.display,
+        opacity: caseStudyElement?.style.opacity,
+        visibility: caseStudyElement?.style.visibility,
+        zIndex: caseStudyElement?.style.zIndex
+      });
+    }, 100);
   }
   
   async transitionToPortfolio(tiles, camera, app) {
     console.log('🔥 SIMPLIFIED: Full reload to homepage - no complex transitions');
+    
+    // 🔥 REMOVE DARK OVERLAY BEFORE RELOAD
+    if (app && app._climbingWall && app._climbingWall.resetBackgroundToScroll) {
+      app._climbingWall.resetBackgroundToScroll();
+    }
     
     // 🔥 SIMPLE SOLUTION: FULL RELOAD TO HOMEPAGE
     // This eliminates all character flickering and state conflicts
@@ -384,8 +408,19 @@ class AppStateManager {
   // 🔥 SCROLL CONSTRAINT METHODS REMOVED - USING OVERLAY APPROACH
 }
 
+// Global state manager instance - ensure singleton
+let appStateInstance = null;
+
+export const getAppState = () => {
+  if (!appStateInstance) {
+    console.log('🔥 STATE MANAGER: Creating singleton instance');
+    appStateInstance = new AppStateManager();
+  }
+  return appStateInstance;
+};
+
 // Global state manager instance
-export const appState = new AppStateManager();
+export const appState = getAppState();
 
 // Export for easy access
 export default appState; 

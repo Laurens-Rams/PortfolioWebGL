@@ -4,8 +4,8 @@ import styled, { createGlobalStyle, css } from 'styled-components';
 export const tokens = {
   // Typography
   fonts: {
-    primary: 'ABC Oracle, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-    display: 'ABC Repro, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    primary: 'ABC Repro, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    display: 'ABC Oracle, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
   },
   
   // Font Weights
@@ -28,10 +28,10 @@ export const tokens = {
     },
     h2: {
       fontSize: '1.82rem',
-      lineHeight: 1.15,
+      lineHeight: 1.3,
       marginBottom: '16px',
       color: '#001E21',  // Dark teal color for H2
-      letterSpacing: '-0.03em',
+      letterSpacing: '-0.02em',
     },
     body: {
       fontSize: '1.3rem',

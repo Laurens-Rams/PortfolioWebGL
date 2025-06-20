@@ -3,7 +3,7 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import TendorApp from './TendorApp.jsx';
-import appState from './StateManager.js';
+// Using window.appState instead of import to ensure same instance
 
 class CaseStudyContainer {
   constructor() {
@@ -62,16 +62,39 @@ class CaseStudyContainer {
   }
 
   setupEventListeners() {
-    // State manager events
-    appState.subscribe('stateChange', (data) => {
-      const { newState } = data;
-      
-      if (newState.caseStudyVisible && !this.isVisible) {
-        this.show();
-      } else if (!newState.caseStudyVisible && this.isVisible) {
-        this.hide();
+    console.log('🔥 CASE STUDY: Setting up event listeners...');
+    
+    // Wait for window.appState to be available
+    const setupListeners = () => {
+      if (!window.appState) {
+        console.log('🔥 CASE STUDY: Waiting for window.appState...');
+        setTimeout(setupListeners, 100);
+        return;
       }
-    });
+      
+      console.log('🔥 CASE STUDY: Using StateManager instance:', window.appState);
+      
+      // State manager events
+      window.appState.subscribe('stateChange', (data) => {
+        console.log('🔥 CASE STUDY: stateChange event received:', data);
+        const { newState } = data;
+        
+        console.log('🔥 CASE STUDY: newState.caseStudyVisible:', newState.caseStudyVisible);
+        console.log('🔥 CASE STUDY: this.isVisible:', this.isVisible);
+        
+        if (newState.caseStudyVisible && !this.isVisible) {
+          console.log('🔥 CASE STUDY: Calling show()...');
+          this.show();
+        } else if (!newState.caseStudyVisible && this.isVisible) {
+          console.log('🔥 CASE STUDY: Calling hide()...');
+          this.hide();
+        } else {
+          console.log('🔥 CASE STUDY: No action needed');
+        }
+      });
+    };
+    
+    setupListeners();
     
     // Container scroll event - dispatch to window for React components
     this.container.addEventListener('scroll', (e) => {
@@ -156,12 +179,12 @@ class CaseStudyContainer {
       opacity: this.container.style.opacity
     });
     
-    // 🔥 SMOOTH FADE-IN WITH DELAY TO PREVENT ABRUPT APPEARANCE
+    // 🔥 SMOOTH FADE-IN WITH 1-SECOND DELAY AS REQUESTED
     setTimeout(() => {
       // Only fade in the container, not the blocker
       this.container.style.opacity = '1';
-      console.log('🔥 CASE STUDY faded in, opacity:', this.container.style.opacity);
-    }, 100); // Small delay for smoother transition
+      console.log('🔥 CASE STUDY faded in after 1s delay, opacity:', this.container.style.opacity);
+    }, 1000); // 1-second delay for case study UI fade-in
     
     // 🔥 DON'T RESET SCROLL - OVERLAY AT CURRENT POSITION
     // Keep current scroll position for Spline background
@@ -171,6 +194,7 @@ class CaseStudyContainer {
     // document.documentElement.style.overflow = 'hidden';
     
     // Load React app
+    console.log('🔥 CASE STUDY: About to load React app...');
     this.loadTendorReactApp();
     
     // Debug container dimensions after loading
@@ -182,7 +206,8 @@ class CaseStudyContainer {
         canScroll: this.container.scrollHeight > this.container.clientHeight,
         overflowY: this.container.style.overflowY,
         pointerEvents: this.container.style.pointerEvents,
-        position: this.container.style.position
+        position: this.container.style.position,
+        innerHTML: this.container.innerHTML.length > 0 ? 'HAS CONTENT' : 'EMPTY'
       });
       
       // Check if there are any overlays blocking scroll
@@ -217,25 +242,48 @@ class CaseStudyContainer {
   async loadTendorReactApp() {
     try {
       console.log('🔥 Loading TENDOR case study with EXACT ORIGINAL REACT COMPONENTS...');
+      console.log('🔥 React available:', !!React);
+      console.log('🔥 ReactDOM available:', !!ReactDOM);
+      console.log('🔥 TendorApp available:', !!TendorApp);
+      console.log('🔥 Container available:', !!this.container);
       
       // Create React root and render the EXACT original TendorApp component
       if (!this.reactRoot) {
+        console.log('🔥 Creating React root...');
         if (ReactDOM.createRoot) {
           // React 18+
+          console.log('🔥 Using React 18+ createRoot');
           this.reactRoot = ReactDOM.createRoot(this.container);
           this.reactRoot.render(React.createElement(TendorApp));
+          console.log('🔥 React 18+ root created and rendered');
         } else {
           // React 17 and below
+          console.log('🔥 Using React 17 render');
           ReactDOM.render(React.createElement(TendorApp), this.container);
+          console.log('🔥 React 17 rendered');
         }
+      } else {
+        console.log('🔥 React root already exists, re-rendering...');
+        this.reactRoot.render(React.createElement(TendorApp));
       }
       
       console.log('🔥 TENDOR case study loaded with EXACT ORIGINAL COMPONENTS!');
       
+      // Check if content was actually rendered
+      setTimeout(() => {
+        console.log('🔥 Container content after React render:', {
+          hasContent: this.container.innerHTML.length > 0,
+          contentLength: this.container.innerHTML.length,
+          firstChild: this.container.firstChild ? this.container.firstChild.tagName : 'NO CHILD'
+        });
+      }, 500);
+      
     } catch (error) {
       console.error('🔥 Error loading TENDOR case study:', error);
+      console.error('🔥 Error stack:', error.stack);
       
       // Fallback to simple HTML if React fails
+      console.log('🔥 Loading fallback HTML...');
       this.container.innerHTML = `
         <div style="
           padding: 100px 20px; 
@@ -257,6 +305,7 @@ class CaseStudyContainer {
           ">← Back to Portfolio</button>
         </div>
       `;
+      console.log('🔥 Fallback HTML loaded');
     }
   }
   

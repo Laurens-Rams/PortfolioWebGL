@@ -29,6 +29,10 @@ import appState from './StateManager';
 import TransitionController from './TransitionController';
 import CaseStudyContainer from './CaseStudyContainer';
 
+// 🔥 PERFORMANCE MONITORING AND LOADING SYSTEMS
+import { performanceMonitor } from './PerformanceMonitor.js';
+import { loadingTimeDisplay } from './LoadingTimeDisplay.js';
+
 // 🔥 SIMPLE FADE-IN MANAGER - NO LOADING SCREEN
 class FadeInManager {
   constructor() {
@@ -36,6 +40,9 @@ class FadeInManager {
       character: false,
       spline: false
     };
+    
+    // Prevent duplicate preloading
+    this.preloadingStarted = false;
     
     // Lock scroll initially
     document.body.classList.add('loading');
@@ -89,6 +96,9 @@ class FadeInManager {
       document.body.classList.remove('loading');
       console.log('🔥 All components loaded - scroll unlocked');
       
+      // Mark complete loading
+      performanceMonitor.markLoadingComplete();
+      
       // 🔥 START SMART PRELOADING AFTER EVERYTHING IS READY
       this.startSmartPreloading();
     }
@@ -96,6 +106,13 @@ class FadeInManager {
 
   // 🔥 SMART PRELOADING SYSTEM
   startSmartPreloading() {
+    // Prevent duplicate preloading
+    if (this.preloadingStarted) {
+      console.log('🔥 Smart preloading already started, skipping...');
+      return;
+    }
+    this.preloadingStarted = true;
+    
     // Wait 3 seconds after everything loads to ensure smooth experience
     setTimeout(() => {
       console.log('🔥 Starting smart preloading of TENDOR assets...');
@@ -161,9 +178,11 @@ class FadeInManager {
 
   updatePreloadProgress() {
     this.preloadingStats.loaded++;
-    const progress = Math.round((this.preloadingStats.loaded / this.preloadingStats.total) * 100);
+    // Cap progress display at 100%
+    const displayLoaded = Math.min(this.preloadingStats.loaded, this.preloadingStats.total);
+    const progress = Math.round((displayLoaded / this.preloadingStats.total) * 100);
     
-    console.log(`🔥 Preload progress: ${this.preloadingStats.loaded}/${this.preloadingStats.total} (${progress}%)`);
+    console.log(`🔥 Preload progress: ${displayLoaded}/${this.preloadingStats.total} (${progress}%)`);
   }
 
   async preloadAssetList(assetList, priority = 'normal') {
@@ -256,16 +275,13 @@ export default class App {
     // 🔥 FADE-IN MANAGER REFERENCE
     this.fadeInManager = fadeInManager;
 
-    // 🔥 PERFORMANCE MONITORING REMOVED FOR PRODUCTION
-    // Enhanced performance monitoring - REMOVED
-    // this.frameCount = 0;
-    // this.lastFPSCheck = performance.now();
-    // this.currentFPS = 60;
-    // this.frameTimeHistory = [];
-    // this.maxFrameTimeHistory = 60;
-    // this.renderStats = { ... };
-    // this.performanceDisplay = null;
-    // this.memoryMonitor = null;
+    // 🔥 PERFORMANCE MONITORING RESTORED
+    this.performanceMonitor = performanceMonitor;
+    this.loadingTimeDisplay = loadingTimeDisplay;
+    
+    // Make them globally accessible for debugging
+    window.performanceMonitor = performanceMonitor;
+    window.loadingTimeDisplay = loadingTimeDisplay;
 
     // UI visibility state
     this.uiVisible = false; // Hidden by default
@@ -348,9 +364,18 @@ export default class App {
     this._scene = new Scene();
     // this._scene.background = new Color(0x000000); // Black background
 
-    // 🔥 PERFORMANCE DISPLAY REMOVED FOR PRODUCTION
-    // Always show performance metrics (not just in debug mode) - REMOVED
-    // this._createPerformanceDisplay();
+    // 🔥 PERFORMANCE DISPLAY RESTORED
+    // Performance monitoring and loading display are already initialized automatically
+    // Create performance overlay for debugging
+    try {
+      this.performanceMonitor.createOverlay();
+      console.log('🔥 Performance overlay created successfully');
+    } catch (error) {
+      console.error('🔥 Error creating performance overlay:', error);
+    }
+    
+    // LoadingTimeDisplay is already showing by default
+    console.log('🔥 Performance monitoring and loading display restored');
 
     // Always show light controls for easy adjustment (not just debug mode)
     // Light controls removed - post-processing controls only
@@ -613,17 +638,37 @@ export default class App {
     this.uiOverlay = new UIOverlay(this);
 
     // 🔥 INITIALIZE CASE STUDY INTEGRATION SYSTEM
+    console.log('🔥 ABOUT TO CREATE CASE STUDY CONTAINER');
     this.caseStudyContainer = new CaseStudyContainer();
-    this.transitionController = new TransitionController(
-      this,
-      this._tiles,
-      this._climbingWall,
-      this.uiOverlay
-    );
+    console.log('🔥 CASE STUDY CONTAINER CREATED, ABOUT TO CREATE TRANSITION CONTROLLER');
+    console.log('🔥 TRANSITION CONTROLLER PARAMS:', {
+      app: !!this,
+      tiles: !!this._tiles,
+      climbingWall: !!this._climbingWall,
+      uiOverlay: !!this.uiOverlay,
+      TransitionController: typeof TransitionController
+    });
     
-    // Initialize routing and setup case study button
-    appState.initializeRouting();
-    this.transitionController.setupCaseStudyButton();
+    try {
+      this.transitionController = new TransitionController(
+        this,
+        this._tiles,
+        this._climbingWall,
+        this.uiOverlay
+      );
+      console.log('🔥 TRANSITION CONTROLLER CREATED SUCCESSFULLY');
+      
+      // Initialize routing only if TransitionController was created successfully
+      appState.initializeRouting();
+      
+      // 🔥 REMOVED: setupCaseStudyButton - now using direct button clicks in UIOverlay
+    } catch (error) {
+      console.error('🔥 ERROR CREATING TRANSITION CONTROLLER:', error);
+      console.error('🔥 ERROR STACK:', error.stack);
+      
+      // Still initialize routing even if TransitionController fails
+      appState.initializeRouting();
+    }
     
     // 🔥 MAKE STATE MANAGER AND APP GLOBALLY ACCESSIBLE FOR BACK BUTTON
     window.appState = appState;
@@ -984,9 +1029,10 @@ export default class App {
       // Main UI Components
       scrollIndicator: { start: 0, end: 8 }, // Visible from start, fade out at 12% (earlier)
       findYourFlow: { start: 25, end: 50 },
-      pushTheLimits: { start: 50, end: 75 }, // EARLIER - starts at 50% instead of 65%
-      getInTouch: { start: 80, end: 95 }, // EARLIER - starts at 70%, ends at 95%
-      bioDescription: { start: 80, end: 100 }, // LATER - same as copyright timing
+      pushTheLimits: { start: 53, end: 77 }, // ADJUSTED: ends at 65% to align with new standing phase
+      getInTouch: { start: 92, end: 100 }, // ADJUSTED: starts at 75% to align with standing phase
+      bioDescription: { start: 75, end: 100 }, // ADJUSTED: starts at 75% to align with standing phase
+      caseStudyPreview: { start: 83, end: 100 }, // NEW: Case study preview component at the very end
       // copyright: { start: 95, end: 100 }, // LATER - fades in when Get in Touch comes in - DISABLED FOR NOW
       
       // Global fade behavior: fade in at 95% visible, fade out starting at 5% remaining

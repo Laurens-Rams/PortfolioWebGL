@@ -1,8 +1,6 @@
 // 🔥 TRANSITION CONTROLLER FOR SEAMLESS CASE STUDY INTEGRATION
 
-import appState from './StateManager.js';
-
-export class TransitionController {
+class TransitionController {
   constructor(app, tiles, splineWall, uiOverlay) {
     this.app = app;
     this.tiles = tiles;
@@ -20,26 +18,16 @@ export class TransitionController {
   }
   
   initializeFadeElements() {
-    // 🔥 DISABLE BLACK FADE OVERLAY - CAUSING ISSUES IN CASE STUDY
-    // Create fade overlay for smooth transitions
-    // this.fadeOverlay = document.createElement('div');
-    // this.fadeOverlay.style.cssText = `
-    //   position: fixed;
-    //   top: 0;
-    //   left: 0;
-    //   width: 100vw;
-    //   height: 100vh;
-    //   background: black;
-    //   opacity: 0;
-    //   pointer-events: none;
-    //   z-index: 9999;
-    //   transition: opacity 0.8s ease;
-    // `;
-    // document.body.appendChild(this.fadeOverlay);
-    
-    // Get references to main elements
-    this.webglCanvas = document.querySelector('canvas');
+    // Get references to main elements - use specific selectors
+    this.webglCanvas = document.querySelector('#canvas_main'); // Character WebGL canvas
+    this.splineCanvas = document.querySelector('#spline-canvas'); // Spline canvas
     this.uiContainer = this.uiOverlay?.overlay || document.body;
+    
+    console.log('🔥 TRANSITION CONTROLLER: Canvas references initialized:', {
+      webglCanvas: !!this.webglCanvas,
+      splineCanvas: !!this.splineCanvas,
+      uiOverlay: !!this.uiOverlay?.overlay
+    });
     
     // Find spline container (usually has spline in class name or data attribute)
     this.splineContainer = document.querySelector('[data-spline]') || 
@@ -48,60 +36,79 @@ export class TransitionController {
   }
   
   setupEventListeners() {
-    // Listen to state manager events
-    appState.subscribe('fadeOutWebGL', () => this.fadeOutWebGL());
-    appState.subscribe('fadeOutUI', () => this.fadeOutUI());
-    appState.subscribe('fadeInWebGL', () => this.fadeInWebGL());
-    appState.subscribe('fadeInUI', () => this.fadeInUI());
-    
-    appState.subscribe('fadeToBlack', () => this.fadeToBlack());
-    appState.subscribe('fadeFromBlack', () => this.fadeFromBlack());
-    appState.subscribe('removeSpline', () => this.removeSpline());
-    appState.subscribe('restoreSpline', () => this.restoreSpline());
-    
-    // 🔥 SPLINE POSITION PRESERVATION
-    appState.subscribe('disableSplineInteractions', () => this.disableSplineInteractions());
-    appState.subscribe('enableSplineInteractions', () => this.enableSplineInteractions());
-    appState.subscribe('preserveSplinePosition', () => this.preserveSplinePosition());
-    
-    // 🔥 AGGRESSIVE SPLINE EVENT BLOCKING
-    appState.subscribe('blockSplineEvents', () => this.blockSplineEvents());
-    appState.subscribe('unblockSplineEvents', () => this.unblockSplineEvents());
-    
-    // 🔥 PERFORMANCE OPTIMIZATION: Spline hide (permanent) for case study scroll
-    appState.subscribe('hideSplineForPerformance', () => this.hideSplineForPerformance());
-    // NO restoration event - once hidden, it stays hidden!
-    
-    // Preserve state before transitions
-    appState.subscribe('transitionStart', (data) => {
-      if (data.to === 'case-study') {
-        this.preservePortfolioState();
+    // Wait for window.appState to be available
+    const setupListeners = () => {
+      if (!window.appState) {
+        console.log('🔥 TRANSITION CONTROLLER: Waiting for window.appState...');
+        setTimeout(setupListeners, 100);
+        return;
       }
-    });
-    
-    // Restore state after transitions
-    appState.subscribe('transitionComplete', (data) => {
-      if (data.to === 'portfolio') {
-        this.restorePortfolioState();
-      }
-    });
-  }
+      
+      console.log('🔥 TRANSITION CONTROLLER: Setting up listeners on StateManager instance:', window.appState);
+      
+      // Listen to state manager events
+      window.appState.subscribe('fadeOutWebGL', () => {
+        console.log('🔥 TRANSITION CONTROLLER: fadeOutWebGL event received!');
+        this.fadeOutWebGL();
+      });
+      window.appState.subscribe('fadeOutUI', () => {
+        console.log('🔥 TRANSITION CONTROLLER: fadeOutUI event received!');
+        this.fadeOutUI();
+      });
+             window.appState.subscribe('fadeInWebGL', () => this.fadeInWebGL());
+       window.appState.subscribe('fadeInUI', () => this.fadeInUI());
+      
+       window.appState.subscribe('fadeToBlack', () => this.fadeToBlack());
+       window.appState.subscribe('fadeFromBlack', () => this.fadeFromBlack());
+       window.appState.subscribe('removeSpline', () => this.removeSpline());
+       window.appState.subscribe('restoreSpline', () => this.restoreSpline());
+      
+       // 🔥 SPLINE POSITION PRESERVATION
+       window.appState.subscribe('disableSplineInteractions', () => this.disableSplineInteractions());
+       window.appState.subscribe('enableSplineInteractions', () => this.enableSplineInteractions());
+       window.appState.subscribe('preserveSplinePosition', () => this.preserveSplinePosition());
+      
+       // 🔥 AGGRESSIVE SPLINE EVENT BLOCKING
+       window.appState.subscribe('blockSplineEvents', () => this.blockSplineEvents());
+       window.appState.subscribe('unblockSplineEvents', () => this.unblockSplineEvents());
+      
+       // 🔥 PERFORMANCE OPTIMIZATION: Spline hide (permanent) for case study scroll
+       window.appState.subscribe('hideSplineForPerformance', () => this.hideSplineForPerformance());
+       // NO restoration event - once hidden, it stays hidden!
+      
+       // Preserve state before transitions
+       window.appState.subscribe('transitionStart', (data) => {
+         if (data.to === 'case-study') {
+           this.preservePortfolioState();
+         }
+       });
+      
+       // Restore state after transitions
+       window.appState.subscribe('transitionComplete', (data) => {
+         if (data.to === 'portfolio') {
+           this.restorePortfolioState();
+         }
+       });
+     };
+     
+     setupListeners();
+   }
   
   // WebGL fade effects
   fadeOutWebGL() {
-    console.log('🔥 FADE OUT WebGL - FAST character fade for case study');
+    console.log('🔥 TRANSITION CONTROLLER: fadeOutWebGL() called - starting character fade out');
     
     if (this.webglCanvas) {
-      this.webglCanvas.style.transition = 'opacity 0.3s ease'; // 🔥 MUCH FASTER: 0.8s → 0.3s
+      console.log('🔥 TRANSITION CONTROLLER: Found WebGL canvas, applying fade out');
+      this.webglCanvas.style.transition = 'opacity 0.3s ease';
       this.webglCanvas.style.opacity = '0';
+    } else {
+      console.log('🔥 TRANSITION CONTROLLER: ERROR - No WebGL canvas found!');
     }
-    
-    // 🔥 DON'T CONTROL CHARACTER - LET STATEMANAGER HANDLE IT
-    // Character visibility controlled by StateManager to prevent conflicts
   }
   
   fadeInWebGL() {
-    const currentState = appState.getState();
+    const currentState = window.appState.getState();
     console.log('🔥 FADE IN WebGL - character control delegated to StateManager');
     
     // 🔥 PREVENT DOUBLE FADE OPERATIONS
@@ -122,26 +129,28 @@ export class TransitionController {
   
   // UI fade effects
   fadeOutUI() {
-    const currentMode = appState.getState().mode;
-    console.log('🔥 FADE OUT UI called - mode:', currentMode);
+    const currentMode = window.appState.getState().mode;
+    console.log('🔥 TRANSITION CONTROLLER: fadeOutUI() called - mode:', currentMode);
     
     // Don't fade out UI if we're in case study mode (unless transitioning)
-    if (currentMode === 'case-study' && !appState.getState().isTransitioning) {
-      console.log('🔥 BLOCKING UI fade out - in case study');
+    if (currentMode === 'case-study' && !window.appState.getState().isTransitioning) {
+      console.log('🔥 TRANSITION CONTROLLER: Blocking UI fade out - in case study');
       return;
     }
     
     if (this.uiOverlay && this.uiOverlay.overlay) {
-      // Fade out the entire UI overlay
+      console.log('🔥 TRANSITION CONTROLLER: Found UI overlay, applying fade out');
       this.uiOverlay.overlay.style.transition = 'opacity 0.8s ease';
       this.uiOverlay.overlay.style.opacity = '0';
       this.uiOverlay.overlay.style.pointerEvents = 'none';
+    } else {
+      console.log('🔥 TRANSITION CONTROLLER: ERROR - No UI overlay found!');
     }
   }
   
   fadeInUI() {
     // 🔥 PREVENT DOUBLE FADE OPERATIONS
-    if (appState.getState().isTransitioning && appState.getState().mode !== 'portfolio') {
+    if (window.appState.getState().isTransitioning && window.appState.getState().mode !== 'portfolio') {
       console.log('🔥 Skipping UI fade-in - wrong transition state');
       return;
     }
@@ -193,7 +202,7 @@ export class TransitionController {
   
   // State preservation
   preservePortfolioState() {
-    appState.preservePortfolioState(
+    window.appState.preservePortfolioState(
       this.tiles,
       this.app._camera,
       this.app._currentScrollOffset || 0
@@ -201,7 +210,7 @@ export class TransitionController {
   }
   
   restorePortfolioState() {
-    appState.restorePortfolioState(
+    window.appState.restorePortfolioState(
       this.tiles,
       this.app._camera,
       this.app
@@ -230,7 +239,7 @@ export class TransitionController {
         
         // 🔥 PASS REQUIRED PARAMETERS FOR STATE PRESERVATION
         const scrollOffset = this.app._currentScrollOffset || 0;
-        appState.transitionToCaseStudy(
+        window.appState.transitionToCaseStudy(
           this.tiles, 
           this.app._camera, 
           scrollOffset, 

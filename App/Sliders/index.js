@@ -3,12 +3,14 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
 import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader';
 import { addGLBToTile, addGLBToTileNoAnimation } from './handleGLBModels';
 import { CLIMBING_CONFIG } from '../ClimbingConfig';
+import { UltraLightCharacterPreview } from '../UltraLightCharacterPreview';
+import { performanceMonitor } from '../PerformanceMonitor';
 
 // --- DEBUG MODE FLAG ---
 // Set to false for production builds to disable detailed logs, debug UI, and FPS counter
 const DEBUG_MODE = true; // 🔥 ENABLE FOR POST-PROCESSING CONTROLS
 
-// TODO: Verify these animation names match the names in your fuckOFFFFF.glb file.
+// TODO: Verify these animation names match the names in your fuckOFFFF.glb file.
 // These are placeholders based on previously used indices.
 // Use animation indices instead of names for more reliable access
 const IDLE_ANIM_INDEX = 148;
@@ -80,11 +82,11 @@ export default class Tiles extends Group {
       // Animation phases with precise scroll ranges
       phases: {
         idle: { start: 0, end: 0.005, action: null },           // 🔥 0-0.5% 
-        turnToWall: { start: 0.005, end: 0.08, action: null },   // Action will play once. This range is mainly a trigger.
+        turnToWall: { start: 0.005, end: 0.12, action: null },   // 🔥 EXPANDED: 0.5-12% (was 0.5-8%)
         // crossfade phase removed - transition handled by crossFadeTo
-        climbing: { start: 0.08, end: 0.58, action: null },   // Starts where crossfade used to.
-        standing: { start: 0.58, end: 0.90, action: null },   // 🔥 ADJUSTED: 58-90% (moved up further)
-        turnAround: { start: 0.90, end: 1.0, action: null } // Action will play once. This range is mainly a trigger.
+        climbing: { start: 0.12, end: 0.65, action: null },   // 🔥 SHORTENED: 12-65% (was 12-75%) - 10% shorter
+        standing: { start: 0.65, end: 0.88, action: null },   // 🔥 LENGTHENED: 65-88% (was 75-88%) - 10% longer  
+        turnAround: { start: 0.88, end: 1.0, action: null } // 🔥 EXPANDED: 88-100% (was 90-100%)
       },
       
       // Crossfade system object removed
@@ -128,6 +130,7 @@ export default class Tiles extends Group {
     
     // Standing position adjustment
     this._climbingEndPosition = null;
+    this._lastStandingUpdate = null;
     
     // UI System
     this.uiVisible = false;
@@ -140,6 +143,12 @@ export default class Tiles extends Group {
     this._isHovering = false;
     this._lastHoverState = false; // Track state changes
     
+    // 🔥 HEAD SCALING FOR HOVER EFFECTS
+    this._headBone = null;
+    this._originalHeadScale = { x: 1, y: 1, z: 1 };
+    this._headScaleTarget = { x: 1, y: 1, z: 1 };
+    this._headScaleCurrent = { x: 1, y: 1, z: 1 };
+    
     // Default and hover effect settings
     this._defaultSettings = {
       // Post-processing
@@ -151,7 +160,10 @@ export default class Tiles extends Group {
       roughness: 0.95,
       metalness: 0.80,
       emission: 0.04,
-      emissionColor: '#000080'
+      emissionColor: '#000080',
+      
+      // 🔥 HEAD SCALING
+      headScale: 1.3
     };
     
     this._hoverSettings = {
@@ -164,14 +176,17 @@ export default class Tiles extends Group {
       roughness: 0.82,            // Your current setting
       metalness: 0.77,            // Your current setting  
       emission: 0.18,             // Your current setting
-      emissionColor: '#0000ff'    // Bright blue
+      emissionColor: '#0000ff',    // Bright blue
+      
+      // 🔥 HEAD SCALING - 20% bigger head on hover
+      headScale: 2.0
     };
     
     // Create post-processing controls immediately
     this._postProcessingPanel = null;
     
     // 🔥 MATERIAL CONTROL SYSTEM
-    this._originalMaterials = new Map(); // Store original materials from GLB
+    this._originalMaterials = new Map();
     this._materialControls = {
       useOriginalTextures: true,  // 🔥 Default to original textures
       roughness: 0.95,           // 🔥 Your perfect settings
@@ -180,9 +195,16 @@ export default class Tiles extends Group {
       emissionColor: '#000080',  // 🔥 That sick blue glow
       color: '#ffffff'           // 🔥 Keep original colors
     };
+    
+    // 🔥 PROGRESSIVE LOADING - Character quality levels
+    this._characterQuality = 'none'; // none -> preview -> optimized
+    this._previewCharacter = null;
   }
 
   _init() {
+    // 🔥 PROGRESSIVE LOADING: Create instant preview first
+    this._createInstantPreview();
+    
     // Create post-processing controls immediately (before character loads)
     if (DEBUG_MODE) {
       this._createPostProcessingControls();
@@ -191,8 +213,8 @@ export default class Tiles extends Group {
     // Create hover effect div for production (always enabled)
     this._createHoverEffectDiv();
     
-    // Load the climbing character
-    this._loadClimber();
+    // Load the climbing character (in background)
+    setTimeout(() => this._loadClimber(), 100); // Small delay for instant preview
     
     // Initialize UI overlay system
 
@@ -218,8 +240,67 @@ export default class Tiles extends Group {
     // this._loadStandupAnimation();
   }
 
+  // 🔥 PROGRESSIVE LOADING METHODS
+  _createInstantPreview() {
+    console.log('🔥 Creating ultra-light character preview...');
+    
+    // Mark start of character preview loading
+    performanceMonitor.markCharacterPreviewStart();
+    
+    this._previewCharacter = new UltraLightCharacterPreview();
+    this._characterQuality = 'preview';
+    
+    // Add to scene immediately
+    this.add(this._previewCharacter);
+    
+    // Listen for when the ultra-light character loads
+    this._previewCharacter.addEventListener('loaded', () => {
+      console.log('✅ Ultra-light character preview ready!');
+      
+      // Mark character preview loaded
+      performanceMonitor.markCharacterPreviewLoaded();
+      
+      // 🔥 IMMEDIATE FADE-IN: No delays, show as soon as ready
+      if (this._app && this._app.fadeInManager) {
+        this._app.fadeInManager.setLoaded('character');
+      }
+    });
+    
+    console.log('🔥 Ultra-light character preview loading...');
+  }
+
+  _upgradeToOptimizedCharacter() {
+    console.log('🔥 Upgrading to optimized character...');
+    
+    if (this._previewCharacter) {
+      // Store current animation time for seamless transition
+      const currentAnimationTime = this._previewCharacter.getCurrentAnimationTime ? 
+        this._previewCharacter.getCurrentAnimationTime() : 0;
+      
+      console.log(`🎬 Storing animation time for seamless transition: ${currentAnimationTime.toFixed(3)}s`);
+      
+      // Remove preview character
+      this.remove(this._previewCharacter);
+      this._previewCharacter.dispose();
+      this._previewCharacter = null;
+      
+      // Set the full character's animation to match the preview
+      if (this._idleAction && currentAnimationTime > 0) {
+        this._idleAction.time = currentAnimationTime;
+        console.log(`🎬 Set full character idle animation time to: ${currentAnimationTime.toFixed(3)}s`);
+      }
+    }
+    
+    this._characterQuality = 'optimized';
+    console.log('✅ Upgraded to optimized character with seamless animation transition');
+  }
+
   _loadClimber() {
-    const climberPath = '/fuckOFFFFF.glb';
+    // 🔥 SMART LOADING: Use optimized model with only 4 animations (15MB instead of 26MB)
+            const climberPath = '/optimized_models/character_clean.glb';
+    
+    // Mark start of full character loading
+    performanceMonitor.markCharacterFullStart();
     
     // Create GLTF loader directly
     const dracoLoader = new DRACOLoader();
@@ -230,6 +311,20 @@ export default class Tiles extends Group {
     gltfLoader.load(
       climberPath, 
       (gltf) => {
+        console.log('🔥 GLB loaded successfully:', climberPath);
+        
+        // Validate GLB structure
+        if (!gltf.scene) {
+          console.error('❌ GLB file missing scene data');
+          return;
+        }
+        
+        if (!gltf.animations || gltf.animations.length === 0) {
+          console.error('❌ GLB file missing animation data');
+          return;
+        }
+        
+        console.log(`✅ GLB validation passed: ${gltf.animations.length} animations found`);
       this._climber = gltf.scene;
       this._climber.scale.set(20, 20, 20);
       // Set initial position - character will stay here and animations will handle movement
@@ -317,7 +412,7 @@ export default class Tiles extends Group {
       // Configure animations (only if they exist)
       if (this._idleAction) {
         this._idleAction.setLoop(LoopRepeat, Infinity);
-        this._idleAction.timeScale = 0.5; // Faster for testing - was 0.02
+        this._idleAction.timeScale = 0.5; // Slower idle animation
       }
       
       if (this._climbingAction) {
@@ -453,7 +548,19 @@ export default class Tiles extends Group {
         turnToWall: this._turnToWallAction ? `(Clone of Index ${TURN_AROUND_ANIM_INDEX}) ${this._turnToWallAction.getClip().name}` : `MISSING (Clone of Index ${TURN_AROUND_ANIM_INDEX})`
       });
       
+      // 🔥 PROGRESSIVE LOADING: Add climber first, then upgrade
       this.add(this._climber);
+      
+      // Mark full character loaded
+      performanceMonitor.markCharacterFullLoaded();
+      
+      // 🔥 CACHE HEAD BONE FOR SCALING EFFECTS
+      this._cacheHeadBoneReference();
+      
+      // 🔥 SMOOTH HEAD SCALE FADE-IN EFFECT
+      this._startHeadScaleFadeIn();
+      
+      this._upgradeToOptimizedCharacter();
     },
     // Progress callback
     (progress) => {
@@ -462,8 +569,16 @@ export default class Tiles extends Group {
     },
     // Error callback
     (error) => {
-      console.error('🔥 Failed to load climber GLB:', error);
-      console.error('🔥 Check if /fuckOFFFFF.glb exists in the public folder');
+      console.error('❌ Failed to load climber GLB:', climberPath);
+      console.error('❌ Error details:', error);
+      console.error('❌ Possible causes:');
+      console.error('   - GLB file is corrupted or has invalid typed array data');
+      console.error('   - File not found or network error');
+      console.error('   - DRACO decoder not loaded properly');
+      console.error('   - GLB contains unsupported features');
+      
+      // Fallback: Keep using the procedural preview
+      console.log('🔥 Falling back to procedural character preview');
     });
   }
 
@@ -745,14 +860,29 @@ export default class Tiles extends Group {
     
     // Set camera position - ONLY place camera position is set!
     this._camera.position.y = targetY;
-    this._camera.position.x = -450; // Fixed left position for cinematic view
+    this._camera.position.x = -550; // More to the left for better cinematic view
     this._camera.position.z = -300; // Fixed depth
     this._camera.rotation.set(-0.3, 0, 0); // Fixed downward tilt
     
     // CRITICAL: Character must move WITH camera during climbing phases
-    // This is the ONLY character positioning logic we need
+    // But NOT during standing phase where position is manually controlled
       if (this._climber) {
-      // Character follows camera movement but with offset
+      const currentState = this._animationController.currentState;
+      
+      // 🔧 FIX: During standing, only set base position if we haven't cached the climbing end position yet
+      if (currentState === 'standing') {
+        // During standing, only set initial base position, then let _applyStandingPositionAdjustment handle all updates
+        if (!this._climbingEndPosition) {
+          // Only set base position once at the start of standing phase
+          this._climber.position.y = targetY - 700; // 700 units below camera
+          this._climber.position.x = 0; // Always centered
+          this._climber.position.z = MathUtils.lerp(-1400, -1800, scrollOffset);
+        }
+        // Scale stays consistent
+        this._climber.scale.set(20, 20, 20);
+        // Don't return early - let _applyStandingPositionAdjustment handle position updates
+      } else {
+        // For all other phases, character follows camera movement with offset
       this._climber.position.y = targetY - 700; // 700 units below camera
         this._climber.position.x = 0; // Always centered
         
@@ -763,6 +893,7 @@ export default class Tiles extends Group {
       
       // Scale stays consistent
       this._climber.scale.set(20, 20, 20);
+      }
     }
     
     this._camera.updateProjectionMatrix();
@@ -869,7 +1000,7 @@ export default class Tiles extends Group {
     this._idleAction.weight = 1.0;
     this._idleAction.play();
     this._idleAction.paused = false;
-    this._idleAction.timeScale = 0.5; // Faster for testing - was 0.02
+    this._idleAction.timeScale = 0.5; // Slower idle animation
     
     this._currentAction = this._idleAction;
     
@@ -1000,22 +1131,74 @@ export default class Tiles extends Group {
 
   // NEW: Optimized hip bone caching method
   _cacheHipBoneReference() {
-    // Only search for hip bone if we haven't found it yet
-    if (!this._hipBone && this._climber) {
-      let currentHipPosition = null;
-      
+    if (!this._climber) return;
+    
+    // Find the hip bone in the skeleton
+    this._climber.traverse((child) => {
+      if (child.isSkinnedMesh && child.skeleton) {
+        const bones = child.skeleton.bones;
+        
+        // Look for hip bone (common names: "Hips", "Hip", "pelvis", "Pelvis")
+        this._hipBone = bones.find(bone => 
+          bone.name.toLowerCase().includes('hip') || 
+          bone.name.toLowerCase().includes('pelvis')
+        );
+        
+        if (this._hipBone) {
+          this._originalHipPosition = this._hipBone.position.clone();
+          console.log('🔥 Hip bone cached:', this._hipBone.name);
+          return;
+        }
+      }
+    });
+    
+    if (!this._hipBone) {
+      console.warn('⚠️ Hip bone not found in character skeleton');
+    }
+  }
+
+  // 🔥 CACHE HEAD BONE FOR SCALING EFFECTS
+  _cacheHeadBoneReference() {
+    if (!this._climber) return;
+    
+    // Find the head bone in the skeleton
+    this._climber.traverse((child) => {
+      if (child.isSkinnedMesh && child.skeleton) {
+        const bones = child.skeleton.bones;
+        
+        // Look for head bone (common names: "Head", "head", "Head_End", "mixamorig:Head")
+        this._headBone = bones.find(bone => 
+          bone.name.toLowerCase().includes('head') && 
+          !bone.name.toLowerCase().includes('end') // Avoid head end bones
+        );
+        
+        if (this._headBone) {
+          // Store original scale
+          this._originalHeadScale = {
+            x: this._headBone.scale.x,
+            y: this._headBone.scale.y,
+            z: this._headBone.scale.z
+          };
+          
+          // 🔥 DON'T APPLY SCALE HERE - let fade-in handle it
+          // Initialize current and target scale values properly
+          this._headScaleCurrent = { ...this._originalHeadScale };
+          this._headScaleTarget = { ...this._originalHeadScale };
+          
+          console.log('🔥 Head bone cached for scaling:', this._headBone.name);
+          console.log('🔥 Original head scale:', this._originalHeadScale);
+          return;
+        }
+      }
+    });
+    
+    if (!this._headBone) {
+      console.warn('⚠️ Head bone not found in character skeleton');
+      // List all available bones for debugging
       this._climber.traverse((child) => {
-        if (!this._hipBone && (child.isBone || child.type === 'Bone')) {
-          const boneName = child.name.toLowerCase();
-          if (boneName.includes('hip') || boneName.includes('root') || boneName.includes('pelvis')) {
-            this._hipBone = child;
-            currentHipPosition = child.position.clone();
-            if (DEBUG_MODE) console.log('🔥 Found and cached hip bone:', child.name, 'Position:', currentHipPosition); // This log is already conditional
-            
-            // Store the original position (where we want to keep it)
-            this._originalHipPosition = currentHipPosition.clone();
-            return; // Stop traversing once we find it
-          }
+        if (child.isSkinnedMesh && child.skeleton) {
+          const boneNames = child.skeleton.bones.map(bone => bone.name);
+          console.log('🔍 Available bones:', boneNames);
         }
       });
     }
@@ -1024,6 +1207,12 @@ export default class Tiles extends Group {
   // REMOVED: _handlePortfolioCamera - camera now moves linearly, character positioning handled by animations
 
   update(deltaTime, mouseX, mouseY) {
+    // 🔥 PROGRESSIVE LOADING: Update preview character if active
+    if (this._characterQuality === 'preview' && this._previewCharacter) {
+      this._previewCharacter.update(deltaTime);
+      return; // Don't run full update logic for preview
+    }
+    
     // 🔥 FPS DISPLAY UPDATE REMOVED FOR PRODUCTION
     // if (DEBUG_MODE && this._fpsDisplay && deltaTime > 0) {
     //   const fps = 1.0 / deltaTime;
@@ -1033,6 +1222,13 @@ export default class Tiles extends Group {
     // Update hover effects
     this._updateHoverEffects(deltaTime);
 
+    // 🔥 UPDATE HEAD SCALING ANIMATION
+    this._updateHeadScaling(deltaTime);
+
+    // 🔥 UPDATE HOVER DIV POSITION BASED ON SCROLL
+    this._updateHoverDivPosition(this._currentScrollOffset);
+
+    // Performance optimization - skip updates if FPS is too low
     // Performance optimization - skip updates if FPS is too low
     this._frameCount = (this._frameCount || 0) + 1;
     const shouldSkipFrame = this._frameCount % 2 === 0 && deltaTime > 0.033; // Skip every other frame if running below 30fps
@@ -1104,96 +1300,83 @@ export default class Tiles extends Group {
   }
 
   // NEW: Position compensation for standing animation to prevent character drift
-  _applyStandingPositionCompensation(standingProgress) {
-    if (!this._hipBone) {
-      this._cacheHipBoneReference();
-      if (!this._hipBone) return;
-    }
-    
-    // Cache the initial hip position at the start of standing animation
-    if (!this._standingStartHipPosition) {
-      const hipWorldPosition = new Vector3();
-      this._hipBone.getWorldPosition(hipWorldPosition);
-      this._standingStartHipPosition = hipWorldPosition.clone();
-      this._standingStartCharacterPosition = this._climber.position.clone();
-      
-      if (DEBUG_MODE) {
-              if (DEBUG_MODE) console.log('🔥 CACHED standing start hip position:', this._standingStartHipPosition);
-      if (DEBUG_MODE) console.log('🔥 CACHED standing start character position:', this._standingStartCharacterPosition);
-      }
-    }
-    
-    // Get current hip world position
-    const currentHipWorldPosition = new Vector3();
-    this._hipBone.getWorldPosition(currentHipWorldPosition);
-    
-    // Calculate how much the hip has moved from the start position
-    const hipMovement = new Vector3().subVectors(currentHipWorldPosition, this._standingStartHipPosition);
-    
-    // Apply counter-movement to the character to keep it in the same visual position
-    // We subtract the hip movement from the character position
-    const compensatedPosition = new Vector3().subVectors(this._standingStartCharacterPosition, hipMovement);
-    this._climber.position.copy(compensatedPosition);
-    
-    // DEBUG: Log position compensation occasionally
-    if (DEBUG_MODE && Math.random() < 0.1) { // 10% of the time for better debugging
-      if (DEBUG_MODE) console.log('🔥 STANDING POSITION COMPENSATION:', {
-        progress: standingProgress.toFixed(3),
-        startHip: this._standingStartHipPosition ? {
-          x: this._standingStartHipPosition.x.toFixed(2),
-          y: this._standingStartHipPosition.y.toFixed(2),
-          z: this._standingStartHipPosition.z.toFixed(2)
-        } : 'NULL',
-        currentHip: {
-          x: currentHipWorldPosition.x.toFixed(2),
-          y: currentHipWorldPosition.y.toFixed(2),
-          z: currentHipWorldPosition.z.toFixed(2)
-        },
-        hipMovement: {
-          x: hipMovement.x.toFixed(2),
-          y: hipMovement.y.toFixed(2),
-          z: hipMovement.z.toFixed(2)
-        },
-        compensatedPos: {
-          x: compensatedPosition.x.toFixed(2),
-          y: compensatedPosition.y.toFixed(2),
-          z: compensatedPosition.z.toFixed(2)
-        },
-        hasHipBone: !!this._hipBone,
-        hasStartPos: !!this._standingStartHipPosition
-      });
-    }
-  }
-
-  // 🔥 CLEAN POSITION ADJUSTMENT: Move character down during standing phase
   _applyStandingPositionAdjustment(standingProgress, scrollOffset) {
     if (!this._climber) return;
     
-    // Cache initial climbing position when first entering standing
-    if (!this._climbingEndPosition) {
-      this._climbingEndPosition = this._climber.position.clone();
+    // Only apply during standing phase to prevent conflicts
+    const phases = this._animationController.phases;
+    if (scrollOffset < phases.standing.start || scrollOffset > phases.standing.end) {
+      // Reset cached position when not in standing state
+      if (this._climbingEndPosition) {
+        // Cleared cached position when exiting standing phase
+        this._climbingEndPosition = null;
+        this._lastStandingUpdate = null;
+      }
+      return;
     }
     
-    // Define how much to move (adjust these values as needed)
-    const STANDING_DROP_AMOUNT = -300;  // 🔥 LESS DOWN: was 150, now 20 pixels
-    const STANDING_RIGHT_AMOUNT = 80; // 🔥 DRIFT RIGHT: 80 pixels to the right
-    const STANDING_CLOSER_AMOUNT = 300; // 🔥 MOVE CLOSER: 120 pixels toward camera
+    // Throttle updates to prevent glitching (update max every 16ms ~60fps)
+    const now = performance.now();
+    if (this._lastStandingUpdate && (now - this._lastStandingUpdate) < 16) {
+      return;
+    }
+    this._lastStandingUpdate = now;
     
-    // Calculate smooth position adjustments based on standing progress
-    // Progress 0 = at climbing end position, Progress 1 = adjusted position
-    const dropOffset = standingProgress * STANDING_DROP_AMOUNT;
-    const rightOffset = standingProgress * STANDING_RIGHT_AMOUNT;
-    const closerOffset = standingProgress * STANDING_CLOSER_AMOUNT;
+    // Cache initial climbing position when first entering standing (only once)
+    if (!this._climbingEndPosition) {
+      this._climbingEndPosition = this._climber.position.clone();
+      // Cached initial climbing position for standing adjustments
+    }
     
-    // Apply the position adjustments (Y down, X right, Z closer)
+    // Smooth position adjustments based on standing progress
+    // Use easing for smoother movement
+    const easedProgress = standingProgress * standingProgress * (3 - 2 * standingProgress); // Smooth step
+    
+    // Define movement amounts (adjusted for better visual effect)
+    const STANDING_DROP_AMOUNT = 30;   // Move down 200 units
+    const STANDING_RIGHT_AMOUNT = 50;   // Move right 50 units  
+    const STANDING_CLOSER_AMOUNT = 250; // Move closer 200 units (increased for more dramatic effect)
+    
+    // Calculate smooth position adjustments
+    const dropOffset = easedProgress * STANDING_DROP_AMOUNT;
+    const rightOffset = easedProgress * STANDING_RIGHT_AMOUNT;
+    const closerOffset = easedProgress * STANDING_CLOSER_AMOUNT;
+    
+    // Store current position before applying changes
+    const positionBefore = this._climber.position.clone();
+    
+    // Apply the position adjustments smoothly
     this._climber.position.y = this._climbingEndPosition.y - dropOffset;
     this._climber.position.x = this._climbingEndPosition.x + rightOffset;
     this._climber.position.z = this._climbingEndPosition.z + closerOffset;
     
-    // 🔥 CRITICAL: Reset cached position when leaving standing state
-    const phases = this._animationController.phases;
-    if (scrollOffset < phases.standing.start || scrollOffset > phases.standing.end) {
-      this._climbingEndPosition = null;
+    // Debug logging to track position changes
+    if (Math.random() < 0.05) { // 5% of the time for detailed debugging
+      console.log('🔧 STANDING POSITION UPDATE:', {
+        scrollOffset: (scrollOffset * 100).toFixed(1) + '%',
+        standingProgress: standingProgress.toFixed(3),
+        easedProgress: easedProgress.toFixed(3),
+        cached: {
+          x: this._climbingEndPosition.x.toFixed(2),
+          y: this._climbingEndPosition.y.toFixed(2),
+          z: this._climbingEndPosition.z.toFixed(2)
+        },
+        before: {
+          x: positionBefore.x.toFixed(2),
+          y: positionBefore.y.toFixed(2),
+          z: positionBefore.z.toFixed(2)
+        },
+        after: {
+          x: this._climber.position.x.toFixed(2),
+          y: this._climber.position.y.toFixed(2),
+          z: this._climber.position.z.toFixed(2)
+        },
+        offsets: {
+          drop: dropOffset.toFixed(2),
+          right: rightOffset.toFixed(2),
+          closer: closerOffset.toFixed(2)
+        }
+      });
     }
   }
 
@@ -1230,13 +1413,19 @@ export default class Tiles extends Group {
     const mouseInfluenceHorizontal = 0.4;
     const mouseInfluenceVertical = 0.3;
     
+    // 🔥 SHIFT HEAD TRACKING CENTER TO CHARACTER POSITION
+    // Character appears on the right side of screen, roughly 70-80% from left
+    // When mouse is at character position, head should look straight
+    const characterScreenX = 0.9; // Character position in normalized coords (-1 to 1)
+    const adjustedMouseX = this._mouseX - characterScreenX; // Shift so character position = 0
+    
     // Adjust horizontal direction based on character orientation
     let horizontalMultiplier = 1; // Default for idle, standing, turnaround (facing camera)
     if (this._animationController.currentState === 'climbing') {
       horizontalMultiplier = -1; // Flip when climbing (facing wall)
     }
     
-    const mouseHeadRotationY = this._mouseX * mouseInfluenceHorizontal * horizontalMultiplier;
+    const mouseHeadRotationY = adjustedMouseX * mouseInfluenceHorizontal * horizontalMultiplier;
     const mouseHeadRotationX = -this._mouseY * mouseInfluenceVertical;
     
     // Debug logging to verify head tracking is working
@@ -1244,6 +1433,7 @@ export default class Tiles extends Group {
       console.log('🔥 Head tracking:', { 
         state: this._animationController.currentState,
         mouseX: this._mouseX?.toFixed(3), 
+        adjustedMouseX: adjustedMouseX?.toFixed(3),
         mouseY: this._mouseY?.toFixed(3),
         headRotY: mouseHeadRotationY.toFixed(3),
         headRotX: mouseHeadRotationX.toFixed(3),
@@ -1343,8 +1533,8 @@ export default class Tiles extends Group {
 
   _handleClimbingAnimation(scrollOffset) {
     if (this._currentAction === this._climbingAction) {
-      // UPDATED: Climbing starts after extended crossfade zone
-      const climbingProgress = Math.max(0, Math.min(1, (scrollOffset - 0.08) / (0.707 - 0.08)));
+      // UPDATED: Climbing starts after extended crossfade zone and ends at 65%
+      const climbingProgress = Math.max(0, Math.min(1, (scrollOffset - 0.08) / (0.65 - 0.08)));
       const climbingDuration = this._climbingAction.getClip().duration;
       const fastClimbingProgress = climbingProgress * 2.0;
       this._climbingAction.time = (climbingDuration * fastClimbingProgress) % climbingDuration;
@@ -1378,46 +1568,10 @@ export default class Tiles extends Group {
   }
 
   _handleStandingAnimation(scrollOffset) {
-    if (this._currentAction === this._standingAction) {
-      // FIXED: Use new range (70.7-95%) and clamp values
-      const standingProgress = Math.max(0, Math.min(1, (scrollOffset - 0.707) / (0.95 - 0.707)));
-      const standingDuration = this._standingAction.getClip().duration;
-      this._standingAction.time = standingDuration * standingProgress;
-      
-      // CRITICAL: Force mixer to update pose when animation is paused
-      this._mixer.update(0);
-      
-      // POSITION COMPENSATION: Keep character in same visual position during standing animation
-      // IMPORTANT: Apply AFTER mixer update so we compensate for the updated pose
-      this._applyStandingPositionCompensation(standingProgress);
-      
-      // CAPTURE HIP WORLD POSITION AT END OF STANDING ANIMATION (when progress >= 0.95)
-      if (standingProgress >= 0.95 && !this._standingEndHipPosition) {
-        this._cacheHipBoneReference();
-        if (this._hipBone) {
-          // Get the WORLD position of the hip bone (character position + hip bone position)
-          const hipWorldPosition = new Vector3();
-          this._hipBone.getWorldPosition(hipWorldPosition);
-          this._standingEndHipPosition = hipWorldPosition.clone();
-          
-          // Also store the character's world position for reference
-          this._standingEndCharacterPosition = this._climber.position.clone();
-          
-          console.log('🔥 CAPTURED standing end hip WORLD position at 95% progress:', this._standingEndHipPosition);
-          console.log('🔥 CAPTURED standing end character position:', this._standingEndCharacterPosition);
-        }
-      }
-      
-      // DEBUG: Log standing animation progress (reduced logging)
-      if (Math.random() < 0.05) { // Log 5% of the time
-        console.log('🔥 Standing animation:', {
-          scrollOffset: scrollOffset.toFixed(3),
-          progress: standingProgress.toFixed(3),
-          time: this._standingAction.time.toFixed(3),
-          duration: standingDuration.toFixed(3)
-        });
-      }
-    }
+    // 🔥 REMOVED: This function is replaced by the centralized animation controller
+    // The old logic here was conflicting with the new system and causing glitches
+    // All standing animation is now handled in _updateCurrentAnimation()
+    return;
   }
 
   _handleTurnAroundAnimation(scrollOffset) {
@@ -1827,7 +1981,7 @@ export default class Tiles extends Group {
       this._setupPostProcessingEventListeners();
       console.log('🔥 POST-PROCESSING CONTROLS CONNECTED SUCCESSFULLY!');
       
-      // Test a control method to make sure it works
+      // Test postprocessing connection
       console.log('🔥 TESTING BLOOM INTENSITY METHOD:', typeof this._app.postprocessing.setBloomIntensity);
       
       // Controls will be visible when user presses 'C' key
@@ -1988,14 +2142,14 @@ export default class Tiles extends Group {
     this._hoverEffectDiv = document.createElement('div');
     this._hoverEffectDiv.style.cssText = `
       position: fixed;
-      top: 25%;
-      right: 17%;
+      top: 20%;
+      right: 12%;
       width: 13%;
       height: 55%;
       background: transparent;
       pointer-events: auto;
       z-index: 5000;
-      transition: background 0.3s ease;
+      transition: right 0.1s ease;
     `;
     
     // Add hover events
@@ -2013,6 +2167,27 @@ export default class Tiles extends Group {
     document.body.appendChild(this._hoverEffectDiv);
     
     console.log('🔥 HOVER EFFECT DIV CREATED: Interactive effects ready');
+  }
+
+  // 🔥 UPDATE HOVER DIV POSITION BASED ON SCROLL
+  _updateHoverDivPosition(scrollProgress) {
+    if (!this._hoverEffectDiv) return;
+    
+    // Interpolate between 12% (start) and 18% (end) based on scroll progress
+    const startRight = 12;
+    const endRight = 18;
+    const currentRight = startRight + (scrollProgress * (endRight - startRight));
+    
+    // Apply the new position
+    this._hoverEffectDiv.style.right = `${currentRight}%`;
+    
+    // Debug logging (occasionally)
+    if (DEBUG_MODE && Math.random() < 0.01) {
+      console.log('🔥 HOVER DIV POSITION UPDATE:', {
+        scrollProgress: scrollProgress.toFixed(3),
+        rightPosition: `${currentRight.toFixed(1)}%`
+      });
+    }
   }
 
   _updateHoverEffects(deltaTime) {
@@ -2033,6 +2208,12 @@ export default class Tiles extends Group {
       this._materialControls.emission = this._hoverSettings.emission;
       
       this._updateAllMaterials();
+      
+      // 🔥 SCALE HEAD ON HOVER - ABSOLUTE SCALE
+      this._headScaleTarget.x = this._originalHeadScale.x * this._hoverSettings.headScale;
+      this._headScaleTarget.y = this._originalHeadScale.y * this._hoverSettings.headScale;
+      this._headScaleTarget.z = this._originalHeadScale.z * this._hoverSettings.headScale;
+      
     } else {
       // INSTANT HOVER OFF - apply default settings
       this._app.postprocessing.setBloomIntensity(this._defaultSettings.bloomIntensity);
@@ -2045,10 +2226,50 @@ export default class Tiles extends Group {
       this._materialControls.emission = this._defaultSettings.emission;
       
       this._updateAllMaterials();
+      
+      // 🔥 RESTORE HEAD SCALE - ABSOLUTE SCALE
+      this._headScaleTarget.x = this._originalHeadScale.x * this._defaultSettings.headScale;
+      this._headScaleTarget.y = this._originalHeadScale.y * this._defaultSettings.headScale;
+      this._headScaleTarget.z = this._originalHeadScale.z * this._defaultSettings.headScale;
     }
     
     // Update last state
     this._lastHoverState = this._isHovering;
+  }
+
+  // 🔥 SMOOTH HEAD SCALING ANIMATION
+  _updateHeadScaling(deltaTime) {
+    // Only update if we have a head bone and scaling is needed
+    if (!this._headBone) return;
+    
+    // Smooth interpolation speed (higher = faster)
+    const lerpSpeed = 8.0;
+    const lerpFactor = Math.min(1.0, deltaTime * lerpSpeed);
+    
+    // Smoothly interpolate between current and target scale
+    this._headScaleCurrent.x += (this._headScaleTarget.x - this._headScaleCurrent.x) * lerpFactor;
+    this._headScaleCurrent.y += (this._headScaleTarget.y - this._headScaleCurrent.y) * lerpFactor;
+    this._headScaleCurrent.z += (this._headScaleTarget.z - this._headScaleCurrent.z) * lerpFactor;
+    
+    // Apply the smooth scale to the head bone
+    this._headBone.scale.set(
+      this._headScaleCurrent.x,
+      this._headScaleCurrent.y,
+      this._headScaleCurrent.z
+    );
+    
+    // Debug logging (occasionally)
+    if (DEBUG_MODE && Math.random() < 0.01) {
+      console.log('🔥 HEAD SCALING UPDATE:', {
+        target: this._headScaleTarget,
+        current: this._headScaleCurrent,
+        applied: {
+          x: this._headBone.scale.x.toFixed(3),
+          y: this._headBone.scale.y.toFixed(3),
+          z: this._headBone.scale.z.toFixed(3)
+        }
+      });
+    }
   }
 
   dispose() {
@@ -2136,6 +2357,20 @@ export default class Tiles extends Group {
   _getTargetAnimationState(scrollOffset) {
     const phases = this._animationController.phases;
     
+    // DEBUG: Log state determination
+    if (DEBUG_MODE && Math.random() < 0.02) {
+      console.log('🔥 STATE DETERMINATION:', {
+        scrollOffset: scrollOffset.toFixed(3),
+        phases: {
+          idle: `${phases.idle.start}-${phases.idle.end}`,
+          turnToWall: `${phases.turnToWall.start}-${phases.turnToWall.end}`,
+          climbing: `${phases.climbing.start}-${phases.climbing.end}`,
+          standing: `${phases.standing.start}-${phases.standing.end}`,
+          turnAround: `${phases.turnAround.start}-${phases.turnAround.end}`
+        }
+      });
+    }
+    
     if (scrollOffset <= phases.idle.end) return 'idle';
     if (scrollOffset <= phases.turnToWall.end) return 'turnToWall';
     // crossfade phase removed, climbing starts earlier
@@ -2153,7 +2388,14 @@ export default class Tiles extends Group {
       return;
     }
     
-    // Animation transition (debug removed for performance)
+    // DEBUG: Log state transitions
+    if (DEBUG_MODE) {
+      console.log('🔥 STATE TRANSITION:', {
+        from: oldState,
+        to: newState,
+        scrollOffset: scrollOffset.toFixed(3)
+      });
+    }
     
     // Stop current action cleanly
     if (controller.phases[oldState]?.action) {
@@ -2303,7 +2545,7 @@ export default class Tiles extends Group {
         // 🔥 PERFORMANT + STABLE: Only configure once, then just update time
         if (currentAction === this._turnToWallAction) {
           const duration = this._turnToWallAction.getClip().duration;
-          const slowProgress = Math.max(0, Math.min(1, phaseProgress * 0.6)); // Clamped progress
+          const slowProgress = Math.max(0, Math.min(1, phaseProgress * 0.4)); // 50% slower (was 0.6)
           const targetTime = duration * slowProgress;
           
           // Only configure if not already set up correctly (using cached action)
@@ -2350,6 +2592,18 @@ export default class Tiles extends Group {
           const clampedProgress = Math.max(0, Math.min(1, phaseProgress));
           const targetTime = duration * clampedProgress;
           
+          // DEBUG: Log standing animation updates
+          if (DEBUG_MODE && Math.random() < 0.05) {
+            console.log('🔥 STANDING ANIMATION UPDATE:', {
+              scrollOffset: scrollOffset.toFixed(3),
+              phaseProgress: clampedProgress.toFixed(3),
+              targetTime: targetTime.toFixed(3),
+              duration: duration.toFixed(3),
+              actionName: this._standingAction.getClip().name,
+              currentTime: currentAction.time.toFixed(3)
+            });
+          }
+          
           // Only configure if not already set up correctly
           if (!currentAction.isRunning() || !currentAction.paused || currentAction.weight !== 1.0) {
             currentAction.reset();
@@ -2357,10 +2611,26 @@ export default class Tiles extends Group {
             currentAction.enabled = true;
             currentAction.paused = true;
             currentAction.weight = 1.0;
+            
+            if (DEBUG_MODE) {
+              console.log('🔥 STANDING ACTION CONFIGURED:', {
+                running: currentAction.isRunning(),
+                paused: currentAction.paused,
+                weight: currentAction.weight,
+                enabled: currentAction.enabled
+              });
+            }
           }
           
           // Just update time - much more performant
           currentAction.time = targetTime;
+        } else {
+          if (DEBUG_MODE) {
+            console.log('🔥 STANDING ACTION MISMATCH!', {
+              currentAction: currentAction?.getClip().name,
+              expectedAction: this._standingAction?.getClip().name
+            });
+          }
         }
         
         // 🔥 CLEAN POSITION ADJUSTMENT: Move character down during standing
@@ -2371,7 +2641,7 @@ export default class Tiles extends Group {
         // 🔥 PERFORMANT + STABLE: Only configure once, then just update time
         if (currentAction === this._turnAroundAction) {
           const duration = this._turnAroundAction.getClip().duration;
-          const slowProgress = Math.max(0, Math.min(1, phaseProgress * 0.4)); // Clamped progress
+          const slowProgress = Math.max(0, Math.min(1, phaseProgress * 0.5)); // Increased for more time: 0.27 → 0.35
           const targetTime = duration * slowProgress;
           
           // Only configure if not already set up correctly
@@ -2491,5 +2761,30 @@ export default class Tiles extends Group {
         this._climber.rotation.y = -Math.PI; // Start at -180°, animation turns to face camera
         break;
     }
+  }
+
+  // 🔥 SMOOTH HEAD SCALE FADE-IN WHEN CHARACTER LOADS
+  _startHeadScaleFadeIn() {
+    if (!this._headBone) return;
+    
+    // Start from original scale (1.0)
+    this._headBone.scale.set(
+      this._originalHeadScale.x,
+      this._originalHeadScale.y,
+      this._originalHeadScale.z
+    );
+    
+    // Set current to original
+    this._headScaleCurrent = { ...this._originalHeadScale };
+    
+    // Set target to default scale (1.3)
+    const defaultScale = this._defaultSettings.headScale;
+    this._headScaleTarget = {
+      x: this._originalHeadScale.x * defaultScale,
+      y: this._originalHeadScale.y * defaultScale,
+      z: this._originalHeadScale.z * defaultScale
+    };
+    
+    console.log('🔥 HEAD SCALE FADE-IN STARTED: Growing from 1.0 to', defaultScale);
   }
 }

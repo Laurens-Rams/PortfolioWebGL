@@ -1,4 +1,5 @@
 import { Group } from 'three';
+import { performanceMonitor } from './PerformanceMonitor';
 
 export default class SplineClimbingWall extends Group {
   constructor() {
@@ -25,28 +26,20 @@ export default class SplineClimbingWall extends Group {
   }
 
   _createBackground() {
-      // Create a moonlight night background div behind everything
-      this._backgroundDiv = document.createElement('div');
-      this._backgroundDiv.style.position = 'fixed';
-      this._backgroundDiv.style.top = '0';
-      this._backgroundDiv.style.left = '0';
-      this._backgroundDiv.style.width = '100%';
-      this._backgroundDiv.style.height = '100%';
-      // Darker moonlight gradient with more blue in dark areas
-      this._backgroundDiv.style.background = `
-        radial-gradient(ellipse at 70% 20%, rgba(20, 35, 60, 0.3) 0%, transparent 50%),
-        linear-gradient(180deg, 
-          #040812 0%, 
-          #0a0f1a 20%, 
-          #050a15 40%, 
-          #020510 70%, 
-          #000308 100%
-        )
-      `;
-      this._backgroundDiv.style.zIndex = '-2'; // Behind everything
-      
-      // Add moonlight background to DOM
-      document.body.appendChild(this._backgroundDiv);
+    // Create a dark background div behind everything
+    this._backgroundDiv = document.createElement('div');
+    this._backgroundDiv.style.position = 'fixed';
+    this._backgroundDiv.style.top = '0';
+    this._backgroundDiv.style.left = '0';
+    this._backgroundDiv.style.width = '100%';
+    this._backgroundDiv.style.height = '100%';
+    this._backgroundDiv.style.zIndex = '-3'; // Behind everything
+    
+    // Add background to DOM
+    document.body.appendChild(this._backgroundDiv);
+    
+    // Initialize with correct starting colors (0% scroll state)
+    this.updateScroll(0);
   }
 
   async _loadSplineContent() {
@@ -55,7 +48,17 @@ export default class SplineClimbingWall extends Group {
       const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
       const isLowEnd = isMobile || navigator.hardwareConcurrency <= 4;
       
-      // Create a canvas element for Spline
+      // Load the Spline climbing wall scene
+      const splineUrl = 'https://prod.spline.design/VaU21x4kIO7tSaXb/scene.splinecode';
+      
+      // Mark start of Spline loading
+      performanceMonitor.markSplineStart();
+      
+      console.log('🔥 Loading Spline climbing wall scene...');
+      
+      // 🔥 Load Spline using optimized Application API
+      
+      // Create canvas element
       this._canvas = document.createElement('canvas');
       this._canvas.id = 'spline-canvas';
       this._canvas.style.position = 'fixed';
@@ -63,66 +66,47 @@ export default class SplineClimbingWall extends Group {
       this._canvas.style.left = '0';
       this._canvas.style.width = '100%';
       this._canvas.style.height = '100%';
-      this._canvas.style.pointerEvents = 'auto'; // Enable mouse events for Spline interactions
-      this._canvas.style.zIndex = '-1'; // Behind the main canvas
-      this._canvas.style.opacity = '0'; // Start hidden - will fade in when loaded
+      this._canvas.style.pointerEvents = 'auto';
+      this._canvas.style.zIndex = '-1';
+      this._canvas.style.opacity = '0';
       
-      // 🔥 PERFORMANCE: Set canvas resolution based on device
+      // Performance optimizations
       if (isLowEnd) {
-        // Reduce canvas resolution on low-end devices
         this._canvas.style.imageRendering = 'pixelated';
-        this._canvas.style.filter = 'contrast(1.1)'; // Slight contrast boost to compensate
+        this._canvas.style.filter = 'contrast(1.1)';
       }
       
       // Add to DOM
       document.body.appendChild(this._canvas);
       
-      // Load Spline viewer dynamically
+      // Load Spline Application directly (should be much faster)
       const { Application } = await import('@splinetool/runtime');
       
-      // Initialize Spline application with performance settings
       this._splineApp = new Application(this._canvas);
       
-      // 🔥 PERFORMANCE: Configure Spline runtime for better performance
+      // Performance optimizations
       if (this._splineApp.setPixelRatio) {
-        // Reduce pixel ratio on low-end devices
         const pixelRatio = isLowEnd ? Math.min(window.devicePixelRatio, 1.5) : window.devicePixelRatio;
         this._splineApp.setPixelRatio(pixelRatio);
-        console.log('🔥 Spline pixel ratio set to:', pixelRatio);
       }
       
-      // 🔥 PERFORMANCE: Add compression and quality settings to URL
-      const baseUrl = 'https://prod.spline.design/VaU21x4kIO7tSaXb/scene.splinecode';
-      const performanceParams = new URLSearchParams({
-        // Cache busting
-        v: Date.now(),
-        // Quality settings for performance
-        quality: isLowEnd ? 'performance' : 'default',
-        // Compression settings
-        compression: 'true',
-        // Reduce geometry complexity on mobile
-        lod: isLowEnd ? 'low' : 'high'
+      if (this._splineApp.setSize) {
+        this._splineApp.setSize(window.innerWidth, window.innerHeight);
+      }
+      
+      // Load the scene with timeout
+      const loadPromise = this._splineApp.load(splineUrl);
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Spline load timeout')), 8000);
       });
-      
-      const optimizedUrl = `${baseUrl}?${performanceParams.toString()}`;
-      
-      console.log('🔥 Loading Spline with performance optimizations:', {
-        isMobile,
-        isLowEnd,
-        url: optimizedUrl
-      });
-      
-      // Load with timeout for better error handling
-      const loadPromise = this._splineApp.load(optimizedUrl);
-      const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Spline load timeout')), 15000) // 15 second timeout
-      );
       
       await Promise.race([loadPromise, timeoutPromise]);
       
       this._splineLoaded = true;
-      
       console.log('🔥 Spline climbing wall loaded successfully!');
+      
+      // Mark Spline loaded
+      performanceMonitor.markSplineLoaded();
       
       // Notify fade manager that Spline is ready
       if (this._fadeInManager) {
@@ -131,7 +115,8 @@ export default class SplineClimbingWall extends Group {
       
     } catch (error) {
       console.error('Failed to load Spline climbing wall:', error);
-      // Fallback to original wall if Spline fails
+      
+      // Fallback to shader starfield if Spline fails
       this._createFallbackWall();
       
       // Still notify fade manager even if Spline fails
@@ -231,124 +216,178 @@ export default class SplineClimbingWall extends Group {
       
       // Store material for time updates
       this._starfieldMaterial = starfieldMaterial;
-      
-      console.log('🔥 High-performance shader starfield created');
     });
   }
 
   _createFallbackWall() {
-    // Simple fallback wall in case Spline fails
-    import('three').then(({ PlaneGeometry, MeshStandardMaterial, Mesh }) => {
-      const wallGeometry = new PlaneGeometry(5000, 3000);
-      const wallMaterial = new MeshStandardMaterial({ 
+    // Create a simple fallback wall using Three.js primitives
+    import('three').then(({ BoxGeometry, MeshLambertMaterial, Mesh, DirectionalLight }) => {
+      // Create a simple geometric wall
+      const wallGeometry = new BoxGeometry(2000, 3000, 200);
+      const wallMaterial = new MeshLambertMaterial({ 
         color: 0x444444,
-        roughness: 0.8,
-        metalness: 0.1
+        transparent: true,
+        opacity: 0.3 
       });
       
       const wall = new Mesh(wallGeometry, wallMaterial);
       wall.position.set(0, -1000, -1200);
       this.add(wall);
-      
-      console.log('Using fallback wall - Spline failed to load');
     });
   }
 
   updateScroll(scrollProgress) {
-    // Keep Spline scene and background always visible - don't hide during portfolio phase
-    // const shouldBeVisible = scrollProgress < 0.8; // Hide during portfolio phase
-    
-    // Always keep visible
+    // Keep Spline scene and background always visible
     if (this._canvas) {
       this._canvas.style.display = 'block';
     }
     
-    // SUNRISE TRANSITION - subtle pre-dawn effect as you climb higher
+    // 🌅 RESTORED: Dynamic background color transitions from dark to sunrise
     if (this._backgroundDiv) {
       this._backgroundDiv.style.display = 'block';
       
-      // Create subtle sunrise transition (0 = night, 1 = pre-dawn)
-      // Start transition at 30% scroll, fully transitioned by 80%
-      const sunriseStart = 0.3;
-      const sunriseEnd = 0.8;
-      let sunriseProgress = 0;
+      // Progressive sunrise - starts pure black with tiny blue hint
+      const darkColor = { r: 0, g: 0, b: 2 };         // #000002 - pure black with minimal blue
+      const preDawnColor = { r: 12, g: 18, b: 32 };   // #0C1220 - balanced pre-dawn
+      const dawnColor = { r: 38, g: 45, b: 62 };      // #262D3E - stronger early dawn
+      const sunriseColor = { r: 85, g: 75, b: 95 };   // #554B5F - brighter sunrise peak
+      const dayColor = { r: 70, g: 64, b: 80 };       // #464050 - balanced end (between bright and dark)
       
-      if (scrollProgress >= sunriseStart) {
-        sunriseProgress = Math.min(1, (scrollProgress - sunriseStart) / (sunriseEnd - sunriseStart));
+      let currentColor;
+      
+      // Smooth color interpolation - start pure black, then gradually build
+      if (scrollProgress < 0.25) {
+        // Pure black to dark (0-25%) - extended pure black period
+        const t = scrollProgress / 0.25;
+        currentColor = this._lerpColor({ r: 0, g: 0, b: 0 }, darkColor, t);
+      } else if (scrollProgress < 0.4) {
+        // Dark to pre-dawn (25-40%) - longer dark period
+        const t = (scrollProgress - 0.25) / 0.15;
+        currentColor = this._lerpColor(darkColor, preDawnColor, t);
+      } else if (scrollProgress < 0.65) {
+        // Pre-dawn to dawn (40-65%)
+        const t = (scrollProgress - 0.4) / 0.25;
+        currentColor = this._lerpColor(preDawnColor, dawnColor, t);
+      } else {
+        // Dawn to sunrise (65-80%) - final state, no changes after 80%
+        const t = Math.min((scrollProgress - 0.65) / 0.15, 1.0);
+        currentColor = this._lerpColor(dawnColor, sunriseColor, t);
       }
       
-      // Interpolate colors for subtle pre-dawn effect
-      const nightColors = {
-        radialCenter: 'rgba(20, 35, 60, 0.3)',
-        gradientTop: '#040812',
-        gradientMid1: '#0a0f1a', 
-        gradientMid2: '#050a15',
-        gradientMid3: '#020510',
-        gradientBottom: '#000308'
-      };
+      // Debug: Log color changes occasionally, but always log at very start
+      if (scrollProgress < 0.05 || Math.random() < 0.02) {
+        console.log('🎨 Background Color Update:', {
+          scrollProgress: (scrollProgress * 100).toFixed(1) + '%',
+          baseColor: `rgb(${currentColor.r}, ${currentColor.g}, ${currentColor.b})`,
+          phase: scrollProgress < 0.25 ? 'pure-black→dark' :
+                 scrollProgress < 0.4 ? 'dark→pre-dawn' : 
+                 scrollProgress < 0.65 ? 'pre-dawn→dawn' : 'dawn→sunrise'
+        });
+      }
       
-             const preDawnColors = {
-         radialCenter: 'rgba(255, 180, 120, 0.6)', // Warm sunrise glow at horizon
-         gradientTop: '#0a0f1a',      // Keep top dark like pre-dawn sky
-         gradientMid1: '#1a1520',     // Dark purple-blue upper sky
-         gradientMid2: '#2a2535',     // Lighter purple as we go down
-         gradientMid3: '#4a3540',     // Warm purple-orange near horizon
-         gradientBottom: '#6a4530'    // Warm orange-brown at bottom (sunrise horizon)
-       };
+             // Progressive sunrise glow - only starts after significant scroll
+       const sunriseIntensity = scrollProgress > 0.3 ? Math.min((scrollProgress - 0.3) * 1.0, 0.65) : 0;
+       
+       // Create balanced orange sunrise glow - truly starts at 0
+       const sunriseR = Math.round(currentColor.r + (55 * sunriseIntensity));
+       const sunriseG = Math.round(currentColor.g + (35 * sunriseIntensity));
+       const sunriseB = Math.round(currentColor.b + (15 * sunriseIntensity));
+       
+                // Calculate outside colors - start more gradually to avoid sudden brightness
+         const outsideIntensity = scrollProgress > 0.35 ? Math.min((scrollProgress - 0.35) * 1.2, 1.4) : 0;
+         
+         // Start with current color, then build to night-like colors
+         const outsideR = outsideIntensity > 0 ? Math.max(11, Math.round(currentColor.r - 25 * outsideIntensity)) : currentColor.r;
+         const outsideG = outsideIntensity > 0 ? Math.max(16, Math.round(currentColor.g - 20 * outsideIntensity)) : currentColor.g;
+         const outsideB = outsideIntensity > 0 ? Math.max(27, Math.round(currentColor.b - 10 * outsideIntensity)) : currentColor.b;
+         
+         // Use solid color until 30% scroll to avoid brightness jumps
+         if (scrollProgress < 0.30 && sunriseIntensity === 0 && outsideIntensity === 0) {
+           console.log('🔥 USING SOLID COLOR:', `rgb(${currentColor.r}, ${currentColor.g}, ${currentColor.b})`);
+           this._backgroundDiv.style.background = `rgb(${currentColor.r}, ${currentColor.g}, ${currentColor.b})`;
+         } else {
+           console.log('🔥 USING GRADIENT - scrollProgress:', scrollProgress, 'sunriseIntensity:', sunriseIntensity, 'outsideIntensity:', outsideIntensity);
+           
+           // When both intensities are 0, force all gradient colors to match currentColor
+           const gradientSunriseR = sunriseIntensity > 0 ? sunriseR : currentColor.r;
+           const gradientSunriseG = sunriseIntensity > 0 ? sunriseG : currentColor.g;
+           const gradientSunriseB = sunriseIntensity > 0 ? sunriseB : currentColor.b;
+           
+           this._backgroundDiv.style.background = `
+             radial-gradient(ellipse at 50% 85%, 
+               rgba(${gradientSunriseR}, ${gradientSunriseG}, ${gradientSunriseB}, ${sunriseIntensity > 0 ? 0.7 : 0}) 0%, 
+               rgba(${Math.round(currentColor.r + gradientSunriseR * 0.2)}, ${Math.round(currentColor.g + gradientSunriseG * 0.15)}, ${Math.round(currentColor.b + gradientSunriseB * 0.1)}, ${sunriseIntensity > 0 ? 0.5 : 0}) 15%,
+               rgba(${currentColor.r}, ${currentColor.g}, ${currentColor.b}, ${sunriseIntensity > 0 ? 0.3 : 0}) 25%,
+               rgba(${outsideR}, ${outsideG}, ${outsideB}, ${outsideIntensity > 0 ? 0.6 : 0}) 40%,
+               rgb(${outsideR}, ${outsideG}, ${outsideB}) 60%
+             ),
+             linear-gradient(180deg, 
+               rgb(${currentColor.r}, ${currentColor.g}, ${currentColor.b}) 0%, 
+               rgb(${currentColor.r}, ${currentColor.g}, ${currentColor.b}) 25%, 
+               rgb(${outsideIntensity > 0 ? Math.max(11, Math.round(currentColor.r - 8 * outsideIntensity)) : currentColor.r}, ${outsideIntensity > 0 ? Math.max(16, Math.round(currentColor.g - 6 * outsideIntensity)) : currentColor.g}, ${outsideIntensity > 0 ? Math.max(27, Math.round(currentColor.b - 5 * outsideIntensity)) : currentColor.b}) 50%, 
+               rgb(${outsideIntensity > 0 ? Math.max(11, Math.round(currentColor.r - 15 * outsideIntensity)) : currentColor.r}, ${outsideIntensity > 0 ? Math.max(16, Math.round(currentColor.g - 12 * outsideIntensity)) : currentColor.g}, ${outsideIntensity > 0 ? Math.max(27, Math.round(currentColor.b - 8 * outsideIntensity)) : currentColor.b}) 75%, 
+               rgb(${outsideR}, ${outsideG}, ${outsideB}) 100%
+             )
+           `;
+         }
+    }
+  }
+  
+  // Helper function for smooth color interpolation
+  _lerpColor(color1, color2, t) {
+    return {
+      r: Math.round(color1.r + (color2.r - color1.r) * t),
+      g: Math.round(color1.g + (color2.g - color1.g) * t),
+      b: Math.round(color1.b + (color2.b - color1.b) * t)
+    };
+  }
+
+  // 🔥 CASE STUDY TRANSITION: Simple overlay fade to dark
+  fadeBackgroundToDark() {
+    console.log('🔥 BACKGROUND: Creating dark overlay for case study transition');
+    
+    // Create dark overlay div
+    this._darkOverlay = document.createElement('div');
+    this._darkOverlay.style.cssText = `
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.85);
+      z-index: -2;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 1.3s ease;
+    `;
+    
+    // Add to body
+    document.body.appendChild(this._darkOverlay);
+    
+    // Fade in the overlay
+    setTimeout(() => {
+      this._darkOverlay.style.opacity = '1';
+    }, 10); // Small delay to ensure element is rendered
+    
+    console.log('🔥 BACKGROUND: Dark overlay fade started');
+  }
+
+  // 🔥 CASE STUDY TRANSITION: Remove dark overlay
+  resetBackgroundToScroll() {
+    console.log('🔥 BACKGROUND: Removing dark overlay');
+    
+    if (this._darkOverlay) {
+      // Fade out the overlay
+      this._darkOverlay.style.opacity = '0';
       
-      // Lerp function for color interpolation
-      const lerpColor = (color1, color2, t) => {
-        // Extract RGB values from hex colors
-        const hex1 = color1.replace('#', '');
-        const hex2 = color2.replace('#', '');
-        
-        const r1 = parseInt(hex1.substr(0, 2), 16);
-        const g1 = parseInt(hex1.substr(2, 2), 16);
-        const b1 = parseInt(hex1.substr(4, 2), 16);
-        
-        const r2 = parseInt(hex2.substr(0, 2), 16);
-        const g2 = parseInt(hex2.substr(2, 2), 16);
-        const b2 = parseInt(hex2.substr(4, 2), 16);
-        
-        const r = Math.round(r1 + (r2 - r1) * t);
-        const g = Math.round(g1 + (g2 - g1) * t);
-        const b = Math.round(b1 + (b2 - b1) * t);
-        
-        return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
-      };
-      
-      // Interpolate radial gradient center (rgba)
-      const lerpRgba = (rgba1, rgba2, t) => {
-        const match1 = rgba1.match(/rgba?\(([^)]+)\)/)[1].split(',').map(x => parseFloat(x.trim()));
-        const match2 = rgba2.match(/rgba?\(([^)]+)\)/)[1].split(',').map(x => parseFloat(x.trim()));
-        
-        const r = Math.round(match1[0] + (match2[0] - match1[0]) * t);
-        const g = Math.round(match1[1] + (match2[1] - match1[1]) * t);
-        const b = Math.round(match1[2] + (match2[2] - match1[2]) * t);
-        const a = match1[3] + (match2[3] - match1[3]) * t;
-        
-        return `rgba(${r}, ${g}, ${b}, ${a.toFixed(2)})`;
-      };
-      
-      // Calculate interpolated colors
-      const currentRadialCenter = lerpRgba(nightColors.radialCenter, preDawnColors.radialCenter, sunriseProgress);
-      const currentTop = lerpColor(nightColors.gradientTop, preDawnColors.gradientTop, sunriseProgress);
-      const currentMid1 = lerpColor(nightColors.gradientMid1, preDawnColors.gradientMid1, sunriseProgress);
-      const currentMid2 = lerpColor(nightColors.gradientMid2, preDawnColors.gradientMid2, sunriseProgress);
-      const currentMid3 = lerpColor(nightColors.gradientMid3, preDawnColors.gradientMid3, sunriseProgress);
-      const currentBottom = lerpColor(nightColors.gradientBottom, preDawnColors.gradientBottom, sunriseProgress);
-      
-             // Apply the interpolated gradient - SUN RISING FROM BOTTOM!
-       this._backgroundDiv.style.background = `
-         radial-gradient(ellipse 200% 100% at 50% 95%, ${currentRadialCenter} 0%, ${currentMid2}80 30%, ${currentTop}40 50%, transparent 70%),
-         linear-gradient(0deg, 
-           ${currentBottom} 0%, 
-           ${currentMid3} 30%, 
-           ${currentMid2} 60%, 
-           ${currentMid1} 80%, 
-           ${currentTop} 100%
-         )
-       `;
+      // Remove from DOM after fade
+      setTimeout(() => {
+        if (this._darkOverlay && this._darkOverlay.parentNode) {
+          this._darkOverlay.parentNode.removeChild(this._darkOverlay);
+          this._darkOverlay = null;
+        }
+        console.log('🔥 BACKGROUND: Dark overlay removed');
+      }, 500);
     }
   }
 
@@ -363,11 +402,6 @@ export default class SplineClimbingWall extends Group {
   // Method to pass mouse coordinates to Spline
   updateMouse(mouseX, mouseY) {
     if (this._splineApp && this._canvas) {
-      // DEBUG: Log mouse coordinates occasionally
-      if (Math.random() < 0.01) {
-        // console.log('🔥 Spline mouse update:', { mouseX: mouseX.toFixed(3), mouseY: mouseY.toFixed(3) });
-      }
-      
       // Try multiple approaches to get mouse events to Spline
       
       // Approach 1: Direct canvas event dispatch with multiple event types

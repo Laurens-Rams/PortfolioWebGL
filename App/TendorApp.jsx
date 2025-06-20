@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import styled, { createGlobalStyle } from 'styled-components';
 import { H1, H2, BodyText, Container } from './DesignSystem';
-import logoVideo from '../public/tendor-assets/LOGO.mp4';
-import brandArchitecture from '../public/tendor-assets/Brand_arhcitecture.png';
+const logoVideo = '/tendor-assets/LOGO.mp4';
+const brandArchitecture = '/tendor-assets/Brand_arhcitecture.png';
 
 // 🎯 GLOBAL SPACING SYSTEM - Easy to change in one place
 const spacing = {
@@ -580,9 +580,9 @@ const ContactLink = styled.a`
   color: #ffffff;
   text-decoration: none;
   font-family: 'ABC Repro', sans-serif;
-  font-size: 1.125rem;
+  font-size: 1.3rem;
   font-weight: 400;
-  letter-spacing: 0.01em;
+  letter-spacing: 0.0em;
   transition: all 0.3s ease;
   display: inline-block;
   
@@ -905,14 +905,14 @@ const ExpandButton = styled.button`
   border: none;
   padding: 0;
   font-family: 'ABC Repro', sans-serif;
-  font-size: 1.125rem;
+  font-size: 1.3rem;
   font-weight: 400;
-  letter-spacing: 0.01em;
+  letter-spacing: 0.0em;
   cursor: pointer;
   transition: all 0.3s ease;
   margin: ${spacing.textToMedia} 0 6px 0;
   display: inline-block;
-  text-decoration: none;
+  text-decoration: underline;
   
   &:hover {
     opacity: 0.7;
@@ -1384,7 +1384,7 @@ function App() {
               <BodyText>So I shaped TENDOR around a different goal: smart, personalized support for real climbers. Not a workout log but more like a coach who gets you.</BodyText>
               
               <ExpandButton onClick={() => setIsPersonalStoryExpanded(!isPersonalStoryExpanded)}>
-                {isPersonalStoryExpanded ? 'Hide Personal Story' : 'Read My Personal Story'} <span style={{display: 'inline-block', transition: 'transform 0.3s ease'}}>↗</span>
+                {isPersonalStoryExpanded ? 'Hide Personal Story' : 'Read My Personal Story'}
               </ExpandButton>
             </SectionContent>
           </SectionGrid>
@@ -1902,13 +1902,13 @@ function App() {
             <ContactTitle>Get in Touch</ContactTitle>
             <ContactLinks>
               <ContactLink href="mailto:laurens@ramsenthaler.com">
-                Email <span style={{display: 'inline-block', transition: 'transform 0.3s ease'}}>↗</span>
+                Email
               </ContactLink>
               <ContactLink href="https://www.linkedin.com/in/laurens-ramsenthaler/" target="_blank" rel="noopener noreferrer">
-                LinkedIn <span style={{display: 'inline-block', transition: 'transform 0.3s ease'}}>↗</span>
+                LinkedIn
               </ContactLink>
               <ContactLink href="https://instagram.com/upartig.design" target="_blank" rel="noopener noreferrer">
-                Instagram <span style={{display: 'inline-block', transition: 'transform 0.3s ease'}}>↗</span>
+                Instagram
               </ContactLink>
             </ContactLinks>
           </ContactFooter>
