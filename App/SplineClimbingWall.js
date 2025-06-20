@@ -1,16 +1,45 @@
-import { Group } from 'three';
 import { performanceMonitor } from './PerformanceMonitor';
 
-export default class SplineClimbingWall extends Group {
+export default class SplineClimbingWall {
   constructor() {
-    super();
+    // Initialize as a regular class, not extending THREE.Group
+    // We'll create the group dynamically when Three.js is available
     
     this._canvas = null;
     this._isVisible = true;
     this._fadeInManager = null;
     this._splineLoaded = false;
+    this._group = null; // Will be set when Three.js is available
     
     this._init();
+  }
+  
+  // Method to initialize Three.js Group when Three.js is available
+  async initThreeGroup() {
+    if (!this._group && window.THREE) {
+      const { Group } = window.THREE;
+      this._group = new Group();
+      
+      // Copy all Group methods to this instance
+      Object.getOwnPropertyNames(Group.prototype).forEach(name => {
+        if (name !== 'constructor' && typeof this._group[name] === 'function') {
+          this[name] = this._group[name].bind(this._group);
+        }
+      });
+      
+      // Copy all Group properties
+      Object.getOwnPropertyNames(this._group).forEach(name => {
+        if (!(name in this)) {
+          Object.defineProperty(this, name, {
+            get: () => this._group[name],
+            set: (value) => { this._group[name] = value; },
+            enumerable: true,
+            configurable: true
+          });
+        }
+      });
+    }
+    return this._group;
   }
   
   setFadeInManager(fadeInManager) {
@@ -83,8 +112,14 @@ export default class SplineClimbingWall extends Group {
       
       // 🔥 PREVENT SPLINE FROM LOADING ITS OWN THREE.JS
       if (!window.THREE) {
-        window.THREE = await import('three');
+        // Load Three.js dynamically and set it globally
+        const threeModule = await import('three');
+        window.THREE = threeModule;
+        console.log('🔥 Three.js loaded globally for Spline compatibility');
       }
+      
+      // Initialize our Three.js Group now that Three.js is available
+      await this.initThreeGroup();
       
       // Load Spline Application directly (should be much faster)
       const { Application } = await import('@splinetool/runtime');
@@ -127,7 +162,7 @@ export default class SplineClimbingWall extends Group {
       console.error('Failed to load Spline climbing wall:', error);
       
       // Fallback to shader starfield if Spline fails
-      this._createFallbackWall();
+      await this._createFallbackWall();
       
       // Still notify fade manager even if Spline fails
       if (this._fadeInManager) {
@@ -138,13 +173,15 @@ export default class SplineClimbingWall extends Group {
 
   createShaderStarfield(scene) {
     // Create a performant shader-based starfield
-    import('three').then(({ 
-      PlaneGeometry, 
-      ShaderMaterial, 
-      Mesh, 
-      Vector2,
-      AdditiveBlending 
-    }) => {
+    (async () => {
+      const threeModule = window.THREE || await import('three');
+      const { 
+        PlaneGeometry, 
+        ShaderMaterial, 
+        Mesh, 
+        Vector2,
+        AdditiveBlending 
+      } = threeModule;
       const starfieldGeometry = new PlaneGeometry(20000, 20000);
       
       // Shader for procedural starfield
@@ -226,24 +263,30 @@ export default class SplineClimbingWall extends Group {
       
       // Store material for time updates
       this._starfieldMaterial = starfieldMaterial;
-    });
+    })();
   }
 
-  _createFallbackWall() {
+  async _createFallbackWall() {
     // Create a simple fallback wall using Three.js primitives
-    import('three').then(({ BoxGeometry, MeshLambertMaterial, Mesh, DirectionalLight }) => {
-      // Create a simple geometric wall
-      const wallGeometry = new BoxGeometry(2000, 3000, 200);
-      const wallMaterial = new MeshLambertMaterial({ 
-        color: 0x444444,
-        transparent: true,
-        opacity: 0.3 
-      });
-      
-      const wall = new Mesh(wallGeometry, wallMaterial);
-      wall.position.set(0, -1000, -1200);
-      this.add(wall);
+    const threeModule = window.THREE || await import('three');
+    const { BoxGeometry, MeshLambertMaterial, Mesh, DirectionalLight } = threeModule;
+    
+    // Create a simple geometric wall
+    const wallGeometry = new BoxGeometry(2000, 3000, 200);
+    const wallMaterial = new MeshLambertMaterial({ 
+      color: 0x444444,
+      transparent: true,
+      opacity: 0.3 
     });
+    
+    const wall = new Mesh(wallGeometry, wallMaterial);
+    wall.position.set(0, -1000, -1200);
+    
+    // Ensure we have the Three.js Group functionality
+    await this.initThreeGroup();
+    if (this._group) {
+      this._group.add(wall);
+    }
   }
 
   updateScroll(scrollProgress) {

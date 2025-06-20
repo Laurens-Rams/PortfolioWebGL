@@ -309,8 +309,9 @@ export default class App {
     console.log('🔥 Loading Three.js dynamically...');
     this.THREE_MODULE = await loadThree();
     
-    // Set global THREE for frustum culling
+    // Set global THREE for frustum culling and Spline compatibility
     THREE = this.THREE_MODULE;
+    window.THREE = this.THREE_MODULE;
     
     // Create TextureLoader now that Three.js is loaded
     TL = new this.THREE_MODULE.TextureLoader();
@@ -651,6 +652,13 @@ export default class App {
     
     // Pass fade manager to Spline wall
     this._climbingWall.setFadeInManager(this.fadeInManager);
+    
+    // Initialize Three.js Group and add to scene if needed
+    this._climbingWall.initThreeGroup().then((group) => {
+      if (group) {
+        this._scene.add(group);
+      }
+    });
     
     // Create shader-based starfield for performance
     this._climbingWall.createShaderStarfield(this._scene);

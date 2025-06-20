@@ -45,7 +45,7 @@ export class UltraLightCharacterPreview extends Group {
       gltfLoader.setDRACOLoader(dracoLoader);
       gltfLoader.setMeshoptDecoder(MeshoptDecoder);
       
-      console.log('📂 Loading ultra-light character (7MB)...');
+      console.log('📂 Loading ultra-light character (1MB)...');
       
       // Add timeout for slow connections
       const loadPromise = new Promise((resolve, reject) => {

@@ -299,8 +299,8 @@ export default class Tiles extends Group {
   }
 
   _loadClimber() {
-    // 🔥 SMART LOADING: Use optimized model with only 4 animations (18MB instead of 26MB)
-    const climberPath = '/optimized_models/character_ultra_light_4anims_compressed.glb';
+    // 🔥 SMART LOADING: Use high-quality model for the full character (6MB)
+    const climberPath = '/optimized_models/character_clean_4anims_compressed.glb';
     
     // Mark start of full character loading
     performanceMonitor.markCharacterFullStart();
