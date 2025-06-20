@@ -133,6 +133,16 @@
     </div>
     <script type="module" src="/main.js"></script>
     
-    <!-- Service Worker REMOVED - was causing loading delays -->
+    <!-- Force unregister any existing service workers -->
+    <script>
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistrations().then(registrations => {
+          registrations.forEach(registration => {
+            console.log('🗑️ Unregistering service worker:', registration.scope);
+            registration.unregister();
+          });
+        });
+      }
+    </script>
   </body>
 </html>
