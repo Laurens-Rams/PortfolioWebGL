@@ -44,6 +44,15 @@ class FadeInManager {
     
     // Background is already visible (no fade needed)
     console.log('🔥 Background ready immediately');
+    
+    // 🔥 EMERGENCY SCROLL UNLOCK - Fallback in case loading system gets stuck
+    setTimeout(() => {
+      if (document.body.classList.contains('loading')) {
+        console.log('🚨 EMERGENCY: Force unlocking scroll after 10 seconds');
+        document.body.classList.remove('loading');
+        console.log('🔥 Emergency scroll unlock activated');
+      }
+    }, 10000); // 10 second fallback
   }
   
   setLoaded(component) {
@@ -247,6 +256,18 @@ class FadeInManager {
 }
 
 const fadeInManager = new FadeInManager();
+
+// 🔥 EMERGENCY SCROLL UNLOCK FUNCTION - Available globally
+window.unlockScroll = function() {
+  document.body.classList.remove('loading');
+  console.log('🔥 Manual scroll unlock activated');
+};
+
+// 🔥 DEBUG FUNCTION - Check loading states
+window.checkLoadingState = function() {
+  console.log('🔥 Loading states:', fadeInManager.loadedComponents);
+  console.log('🔥 Body has loading class:', document.body.classList.contains('loading'));
+};
 
 // TextureLoader will be created dynamically when needed
 let TL = null;
