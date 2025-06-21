@@ -92,15 +92,31 @@ export class CharacterOutlineEffect extends Effect {
         if (!this.enabled) return;
         
         // Store original materials and replace with mask material
+        let maskAppliedCount = 0;
         this.scene.traverse((child) => {
             if (child.isMesh && child.visible) {
-                // Only apply to character meshes (you can add more specific filtering here)
-                if (child.name.includes('avaturn') || child.userData.isCharacter) {
+                // Apply to character meshes - expanded detection
+                const isCharacterMesh = child.name.includes('avaturn') || 
+                                      child.userData.isCharacter ||
+                                      child.name.includes('Body_Mesh') ||
+                                      child.name.includes('Head_Mesh') ||
+                                      child.name.includes('Eye_Mesh') ||
+                                      child.name.includes('Teeth_Mesh') ||
+                                      child.name.includes('Tongue_Mesh') ||
+                                      child.name.includes('Eyelash_Mesh') ||
+                                      child.name.includes('EyeAO_Mesh');
+                
+                if (isCharacterMesh) {
                     this.originalMaterials.set(child, child.material);
                     child.material = this.maskMaterial;
+                    maskAppliedCount++;
                 }
             }
         });
+        
+        if (maskAppliedCount === 0) {
+            console.warn('🔥 CHARACTER OUTLINE: No character meshes found for outline effect');
+        }
         
         // Render to mask target
         const originalRenderTarget = renderer.getRenderTarget();

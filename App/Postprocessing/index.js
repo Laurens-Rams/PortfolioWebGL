@@ -216,6 +216,11 @@ export default class Postprocessing {
     render(deltaTime = 0.016) {
         this.distortionTexture.update();
         
+        // Render character mask for outline effect if enabled
+        if (this.controls.characterOutline.enabled) {
+            this._characterOutlineEffect.renderCharacterMask(this._gl);
+        }
+        
         console.log('🔥 POSTPROCESSING RENDER CALLED');
         this._composer.render(deltaTime);
     }

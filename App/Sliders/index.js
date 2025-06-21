@@ -48,6 +48,9 @@ const CROSSFADE_DURATION = 0.25; // seconds for AnimationAction.crossFadeTo
 // Material cache to reuse materials and reduce memory for the main character
 const characterMaterialCache = new Map();
 
+// Clear cache to ensure all materials get the onBeforeRender fix
+characterMaterialCache.clear();
+
 // Optimized material creation with caching for the main character
 async function getOptimizedCharacterMaterial(color, roughness, metalness) {
   if (!THREE) {
@@ -61,13 +64,41 @@ async function getOptimizedCharacterMaterial(color, roughness, metalness) {
       color: color,
       roughness: roughness,
       metalness: metalness,
-      side: THREE.FrontSide // Assuming all character parts are FrontSide
+      side: THREE.FrontSide,
+      transparent: false,
+      opacity: 1.0
     });
+    
+    // Ensure the material has all required methods and properties
+    material.onBeforeRender = material.onBeforeRender || function() {};
+    material.onAfterRender = material.onAfterRender || function() {};
+    
+    // Force material to update
+    material.needsUpdate = true;
+    
+    console.log(`🔥 Created white material with color:`, color, 'roughness:', roughness, 'metalness:', metalness);
+    console.log(`🔥 Material properties:`, {
+      hasColor: !!material.color,
+      hasEmissive: !!material.emissive,
+      hasOnBeforeRender: typeof material.onBeforeRender === 'function'
+    });
+    
     characterMaterialCache.set(key, material);
-    if (DEBUG_MODE) console.log(`🔥 Created cached character material: ${key}`);
   }
 
-  return characterMaterialCache.get(key);
+  const cachedMaterial = characterMaterialCache.get(key);
+  
+  // Double-check that even cached materials have required methods
+  if (!cachedMaterial.onBeforeRender || typeof cachedMaterial.onBeforeRender !== 'function') {
+    cachedMaterial.onBeforeRender = function() {};
+    console.log(`🔥 Added onBeforeRender to cached material`);
+  }
+  
+  if (!cachedMaterial.onAfterRender || typeof cachedMaterial.onAfterRender !== 'function') {
+    cachedMaterial.onAfterRender = function() {};
+  }
+
+  return cachedMaterial;
 }
 
 // Create the class after Three.js is available
@@ -210,12 +241,13 @@ function createTilesClass() {
       bloomIntensity: 5.0,        // Your current setting
       characterOutlineEnabled: true,
       
-      // Materials - ENHANCED on hover
-      useOriginalTextures: false,  // Use custom materials
+      // Materials - WHITE STYLIZED EFFECT on hover
+      useOriginalTextures: false,  // Use white materials for stylized effect
       roughness: 0.82,            // Your current setting
       metalness: 0.77,            // Your current setting  
       emission: 0.18,             // Your current setting
       emissionColor: '#0000ff',    // Bright blue
+      color: '#ffffff',           // White base color
       
       // 🔥 HEAD SCALING - 20% bigger head on hover
       headScale: 2.0
@@ -468,7 +500,7 @@ function createTilesClass() {
       // Configure animations (only if they exist)
       if (this._idleAction) {
         this._idleAction.setLoop(THREE.LoopRepeat, Infinity);
-        this._idleAction.timeScale = 0.5; // Slower idle animation
+        this._idleAction.timeScale = 1.5; // Slower idle animation
       }
       
       if (this._climbingAction) {
@@ -913,7 +945,7 @@ function createTilesClass() {
     const endY = CLIMBING_CONFIG.CAMERA_END_Y + 300;     // 800
     
     // Simple linear interpolation based on scroll
-    const targetY = MathUtils.lerp(startY, endY, scrollOffset);
+    const targetY = THREE.MathUtils.lerp(startY, endY, scrollOffset);
     
     // Set camera position - ONLY place camera position is set!
     this._camera.position.y = targetY;
@@ -933,7 +965,7 @@ function createTilesClass() {
           // Only set base position once at the start of standing phase
           this._climber.position.y = targetY - 700; // 700 units below camera
           this._climber.position.x = 0; // Always centered
-          this._climber.position.z = MathUtils.lerp(-1400, -1800, scrollOffset);
+          this._climber.position.z = THREE.MathUtils.lerp(-1400, -1800, scrollOffset);
         }
         // Scale stays consistent
         this._climber.scale.set(20, 20, 20);
@@ -946,7 +978,7 @@ function createTilesClass() {
         // Gradually move character closer as they climb (bigger appearance)
         const startZ = -1400; // Further away at start
       const endZ = -1800;   // Closer at end (bigger)
-      this._climber.position.z = MathUtils.lerp(startZ, endZ, scrollOffset);
+      this._climber.position.z = THREE.MathUtils.lerp(startZ, endZ, scrollOffset);
       
       // Scale stays consistent
       this._climber.scale.set(20, 20, 20);
@@ -1801,7 +1833,7 @@ function createTilesClass() {
   }
 
   // 🔥 MATERIAL CONTROL METHODS
-  _updateMeshMaterial(mesh) {
+  async _updateMeshMaterial(mesh) {
     const controls = this._materialControls;
     
     if (controls.useOriginalTextures) {
@@ -1841,8 +1873,10 @@ function createTilesClass() {
            materialClone.metalness = controls.metalness;
          }
          
-         materialClone.emissive.setHex(parseInt(controls.emissionColor.replace('#', ''), 16));
-         materialClone.emissiveIntensity = controls.emission;
+         if (materialClone.emissive) {
+           materialClone.emissive.setHex(parseInt(controls.emissionColor.replace('#', ''), 16));
+           materialClone.emissiveIntensity = controls.emission;
+         }
         
         // Only tint color if not pure white (preserve original colors)
         if (controls.color !== '#ffffff') {
@@ -1853,29 +1887,59 @@ function createTilesClass() {
       }
     } else {
       // Use optimized material (no textures)
-      mesh.material = getOptimizedCharacterMaterial(
+      console.log(`🔥 APPLYING WHITE MATERIAL to ${mesh.name}:`, {
+        color: controls.color,
+        roughness: controls.roughness,
+        metalness: controls.metalness,
+        emission: controls.emission,
+        emissionColor: controls.emissionColor
+      });
+      
+      mesh.material = await getOptimizedCharacterMaterial(
         parseInt(controls.color.replace('#', ''), 16),
         controls.roughness,
         controls.metalness
       );
-      mesh.material.emissive.setHex(parseInt(controls.emissionColor.replace('#', ''), 16));
-      mesh.material.emissiveIntensity = controls.emission;
+      
+      if (mesh.material.emissive) {
+        mesh.material.emissive.setHex(parseInt(controls.emissionColor.replace('#', ''), 16));
+        mesh.material.emissiveIntensity = controls.emission;
+      }
+      
+      // Ensure material is visible
+      mesh.material.visible = true;
+      mesh.visible = true;
+      
+      console.log(`🔥 WHITE MATERIAL APPLIED to ${mesh.name}:`, {
+        materialType: mesh.material.type,
+        materialColor: mesh.material.color ? mesh.material.color.getHexString() : 'no color',
+        emissiveColor: mesh.material.emissive ? mesh.material.emissive.getHexString() : 'no emissive',
+        emissiveIntensity: mesh.material.emissiveIntensity || 0,
+        hasOnBeforeRender: typeof mesh.material.onBeforeRender === 'function',
+        visible: mesh.visible
+      });
     }
   }
 
-  _updateAllMaterials() {
+  async _updateAllMaterials() {
     if (!this._climber) {
       console.log('🔥 MATERIAL UPDATE FAILED: No climber found');
       return;
     }
     
     let updatedCount = 0;
+    const meshes = [];
     this._climber.traverse((child) => {
       if (child.isMesh && child.material) {
-        this._updateMeshMaterial(child);
-        updatedCount++;
+        meshes.push(child);
       }
     });
+    
+    // Update all materials asynchronously
+    for (const mesh of meshes) {
+      await this._updateMeshMaterial(mesh);
+      updatedCount++;
+    }
     
     console.log('🔥 MATERIALS UPDATED:', {
       meshCount: updatedCount,
@@ -2247,7 +2311,7 @@ function createTilesClass() {
     }
   }
 
-  _updateHoverEffects(deltaTime) {
+  async _updateHoverEffects(deltaTime) {
     // MAXIMUM PERFORMANCE - only update when hover state changes
     if (!this._app?.postprocessing || this._isHovering === this._lastHoverState) return;
     
@@ -2255,14 +2319,18 @@ function createTilesClass() {
     
     if (this._isHovering) {
       // INSTANT HOVER ON - apply all hover settings
+      console.log('🔥 HOVER ON: Setting bloom intensity to', this._hoverSettings.bloomIntensity);
       this._app.postprocessing.setBloomIntensity(this._hoverSettings.bloomIntensity);
+      console.log('🔥 HOVER ON: Enabling character outline');
       this._app.postprocessing.setCharacterOutlineEnabled(true);
       
-      // Apply hover material settings
-      this._materialControls.useOriginalTextures = false;
+      // Apply hover material settings - WHITE MATERIALS ONLY
+      this._materialControls.useOriginalTextures = false;  // Use white materials
       this._materialControls.roughness = this._hoverSettings.roughness;
       this._materialControls.metalness = this._hoverSettings.metalness;
       this._materialControls.emission = this._hoverSettings.emission;
+      this._materialControls.emissionColor = this._hoverSettings.emissionColor;
+      this._materialControls.color = '#ffffff';  // White materials
       
       this._updateAllMaterials();
       
@@ -2273,7 +2341,9 @@ function createTilesClass() {
       
     } else {
       // INSTANT HOVER OFF - apply default settings
+      console.log('🔥 HOVER OFF: Setting bloom intensity to', this._defaultSettings.bloomIntensity);
       this._app.postprocessing.setBloomIntensity(this._defaultSettings.bloomIntensity);
+      console.log('🔥 HOVER OFF: Disabling character outline');
       this._app.postprocessing.setCharacterOutlineEnabled(false);
       
       // Apply default material settings
@@ -2281,6 +2351,8 @@ function createTilesClass() {
       this._materialControls.roughness = this._defaultSettings.roughness;
       this._materialControls.metalness = this._defaultSettings.metalness;
       this._materialControls.emission = this._defaultSettings.emission;
+      this._materialControls.emissionColor = this._defaultSettings.emissionColor;
+      this._materialControls.color = '#ffffff';  // Keep white to preserve original colors
       
       this._updateAllMaterials();
       
