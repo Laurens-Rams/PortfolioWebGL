@@ -17,14 +17,21 @@ function initThree() {
   return true;
 }
 
-export class MinimalCharacterPreview extends THREE.Group {
-  constructor() {
-    // Initialize Three.js
-    if (!initThree()) {
-      throw new Error('Three.js not available for MinimalCharacterPreview');
-    }
-    
-    super();
+// Factory function to create the class after Three.js is available
+function createMinimalCharacterPreview() {
+  if (!window.THREE) {
+    console.error('🚨 window.THREE not available for MinimalCharacterPreview');
+    return null;
+  }
+  
+  return class MinimalCharacterPreview extends window.THREE.Group {
+    constructor() {
+      // Initialize Three.js
+      if (!initThree()) {
+        throw new Error('Three.js not available for MinimalCharacterPreview');
+      }
+      
+      super();
     
     this.name = 'MinimalCharacterPreview';
     this.mixer = null;
@@ -190,4 +197,8 @@ export class MinimalCharacterPreview extends THREE.Group {
     
     console.log('🔥 Minimal character preview disposed');
   }
-} 
+  };
+}
+
+// Export the factory function
+export { createMinimalCharacterPreview as MinimalCharacterPreview }; 

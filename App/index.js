@@ -13,7 +13,7 @@ import { DragGesture } from '@use-gesture/vanilla';
 // import Postprocessing from './Postprocessing'; // Commented: will be dynamically imported inside _init to avoid blocking first paint
 import { damp } from 'maath/easing';
 
-import Tiles from './Sliders';
+import createTiles from './Sliders';
 import { CLIMBING_CONFIG } from './ClimbingConfig';
 import SplineClimbingWall from './SplineClimbingWall';
 import UIOverlay from './UIOverlay';
@@ -650,7 +650,7 @@ export default class App {
   }
 
   _initScene() {
-    const tiles = new Tiles(this._camera, this._scene, this._mainLight, this, {
+    const tiles = createTiles(this._camera, this._scene, this._mainLight, this, {
       frontLight: this._frontLight,
       keyLight: this._keyLight,
       fillLight: this._fillLight

@@ -70,9 +70,19 @@ async function getOptimizedCharacterMaterial(color, roughness, metalness) {
   return characterMaterialCache.get(key);
 }
 
-export default class Tiles extends THREE.Group {
-  constructor(camera, scene, pointLight, app, lights = {}) {
-    super();
+// Create the class after Three.js is available
+let TilesClass = null;
+
+function createTilesClass() {
+  if (!window.THREE) {
+    console.error('🚨 window.THREE not available for Tiles');
+    return null;
+  }
+  
+  if (!TilesClass) {
+    TilesClass = class Tiles extends window.THREE.Group {
+      constructor(camera, scene, pointLight, app, lights = {}) {
+        super();
 
     this._camera = camera;
     this._scene = scene;
@@ -278,7 +288,14 @@ export default class Tiles extends THREE.Group {
     // Mark start of character preview loading
     performanceMonitor.markCharacterPreviewStart();
     
-    this._previewCharacter = new UltraLightCharacterPreview();
+    // Create the character preview using factory function
+    const UltraLightCharacterPreviewClass = UltraLightCharacterPreview();
+    if (!UltraLightCharacterPreviewClass) {
+      console.error('🚨 Could not create UltraLightCharacterPreview - Three.js not available');
+      return;
+    }
+    
+    this._previewCharacter = new UltraLightCharacterPreviewClass();
     this._characterQuality = 'preview';
     
     // Add to scene immediately
@@ -2827,4 +2844,17 @@ export default class Tiles extends THREE.Group {
     
     console.log('🔥 HEAD SCALE FADE-IN STARTED: Growing from 1.0 to', defaultScale);
   }
+    };
+  }
+  
+  return TilesClass;
+}
+
+// Export factory function
+export default function createTiles(camera, scene, pointLight, app, lights = {}) {
+  const TilesClass = createTilesClass();
+  if (!TilesClass) {
+    throw new Error('Three.js not available for Tiles');
+  }
+  return new TilesClass(camera, scene, pointLight, app, lights);
 }
