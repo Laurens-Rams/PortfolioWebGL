@@ -1,12 +1,30 @@
-import * as THREE from 'three';
+// 🔥 PREVENT THREE.JS DUPLICATION - Use window.THREE set by main app
+// Static import removed to prevent bundling Three.js twice (once by us, once by Spline)
+
 import { EffectComposer, RenderPass, ShaderPass, SelectiveBloomEffect, EffectPass, FXAAEffect } from 'postprocessing';
 import DistortionTexture from './Distortion';
 import { DistortionEffect } from './DistortionEffect';
 import { CharacterOutlineEffect } from './CharacterOutlineEffect';
 
+let THREE;
+
+// Initialize Three.js from global instance
+function initThree() {
+  if (!window.THREE) {
+    console.error('🚨 window.THREE not available - main app should set this before postprocessing');
+    return false;
+  }
+  THREE = window.THREE;
+  return true;
+}
 
 export default class Postprocessing {
     constructor({ gl, scene, camera }) {
+        // Initialize Three.js
+        if (!initThree()) {
+            throw new Error('Three.js not available for postprocessing');
+        }
+        
         this._gl = gl;
         this._scene = scene;
         this._camera = camera;
@@ -198,18 +216,10 @@ export default class Postprocessing {
     render(deltaTime = 0.016) {
         this.distortionTexture.update();
         
-        // Render character mask for outline effect
-        this._characterOutlineEffect.renderCharacterMask(this._gl);
-        
-        this._composer.render();
-        
-        // Debug log occasionally
-        if (Math.random() < 0.01) {
-            console.log('🔥 POSTPROCESSING RENDER CALLED');
-        }
+        console.log('🔥 POSTPROCESSING RENDER CALLED');
+        this._composer.render(deltaTime);
     }
 
-    // Get current control values for UI
     getControls() {
         return this.controls;
     }

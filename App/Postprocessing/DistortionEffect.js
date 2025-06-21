@@ -1,9 +1,28 @@
-import * as THREE from 'three';
+// 🔥 PREVENT THREE.JS DUPLICATION - Use window.THREE set by main app
+// Static import removed to prevent bundling Three.js twice (once by us, once by Spline)
+
 import { Effect } from 'postprocessing';
+
+let THREE;
+
+// Initialize Three.js from global instance
+function initThree() {
+  if (!window.THREE) {
+    console.error('🚨 window.THREE not available - main app should set this before DistortionEffect');
+    return false;
+  }
+  THREE = window.THREE;
+  return true;
+}
 
 // The distortion from the tutorial you showed me and then changed
 export class DistortionEffect extends Effect {
     constructor(texture) {
+        // Initialize Three.js
+        if (!initThree()) {
+            throw new Error('Three.js not available for DistortionEffect');
+        }
+        
         super('DistortionEffect', fragment, {
             uniforms: new Map([
                 ['uTexture', new THREE.Uniform(texture)],

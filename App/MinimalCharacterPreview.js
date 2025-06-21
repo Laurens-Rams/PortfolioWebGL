@@ -2,21 +2,28 @@
 // Creates a super lightweight character preview using Three.js primitives
 // Total size: <1KB (just code, no assets!)
 
-import {
-  Group,
-  BoxGeometry,
-  CylinderGeometry,
-  SphereGeometry,
-  MeshStandardMaterial,
-  Mesh,
-  AnimationMixer,
-  AnimationClip,
-  KeyframeTrack,
-  VectorKeyframeTrack
-} from 'three';
+// 🔥 PREVENT THREE.JS DUPLICATION - Use window.THREE set by main app
+// Static imports removed to prevent bundling Three.js twice (once by us, once by Spline)
 
-export class MinimalCharacterPreview extends Group {
+let THREE;
+
+// Initialize Three.js from global instance
+function initThree() {
+  if (!window.THREE) {
+    console.error('🚨 window.THREE not available - main app should set this before MinimalCharacterPreview');
+    return false;
+  }
+  THREE = window.THREE;
+  return true;
+}
+
+export class MinimalCharacterPreview extends THREE.Group {
   constructor() {
+    // Initialize Three.js
+    if (!initThree()) {
+      throw new Error('Three.js not available for MinimalCharacterPreview');
+    }
+    
     super();
     
     this.name = 'MinimalCharacterPreview';
@@ -36,69 +43,69 @@ export class MinimalCharacterPreview extends Group {
 
   _createCharacter() {
     // Create materials
-    const bodyMaterial = new MeshStandardMaterial({
+    const bodyMaterial = new THREE.MeshStandardMaterial({
       color: 0x8B7355, // Skin tone
       roughness: 0.8,
       metalness: 0.1,
     });
     
-    const clothingMaterial = new MeshStandardMaterial({
+    const clothingMaterial = new THREE.MeshStandardMaterial({
       color: 0x2C5F41, // Climbing gear color
       roughness: 0.9,
       metalness: 0.05,
     });
     
     // Head
-    const headGeometry = new SphereGeometry(1, 8, 6);
-    const head = new Mesh(headGeometry, bodyMaterial);
+    const headGeometry = new THREE.SphereGeometry(1, 8, 6);
+    const head = new THREE.Mesh(headGeometry, bodyMaterial);
     head.position.set(0, 6, 0);
     head.name = 'head';
     this.add(head);
     
     // Torso
-    const torsoGeometry = new BoxGeometry(2, 3, 1);
-    const torso = new Mesh(torsoGeometry, clothingMaterial);
+    const torsoGeometry = new THREE.BoxGeometry(2, 3, 1);
+    const torso = new THREE.Mesh(torsoGeometry, clothingMaterial);
     torso.position.set(0, 3, 0);
     torso.name = 'torso';
     this.add(torso);
     
     // Arms
-    const armGeometry = new CylinderGeometry(0.3, 0.3, 2.5, 6);
+    const armGeometry = new THREE.CylinderGeometry(0.3, 0.3, 2.5, 6);
     
-    const leftArm = new Mesh(armGeometry, bodyMaterial);
+    const leftArm = new THREE.Mesh(armGeometry, bodyMaterial);
     leftArm.position.set(-1.5, 4, 0);
     leftArm.rotation.z = Math.PI / 6; // Slight climbing pose
     leftArm.name = 'leftArm';
     this.add(leftArm);
     
-    const rightArm = new Mesh(armGeometry, bodyMaterial);
+    const rightArm = new THREE.Mesh(armGeometry, bodyMaterial);
     rightArm.position.set(1.5, 4.5, 0);
     rightArm.rotation.z = -Math.PI / 4; // Reaching up
     rightArm.name = 'rightArm';
     this.add(rightArm);
     
     // Legs
-    const legGeometry = new CylinderGeometry(0.4, 0.4, 3, 6);
+    const legGeometry = new THREE.CylinderGeometry(0.4, 0.4, 3, 6);
     
-    const leftLeg = new Mesh(legGeometry, clothingMaterial);
+    const leftLeg = new THREE.Mesh(legGeometry, clothingMaterial);
     leftLeg.position.set(-0.6, 0, 0);
     leftLeg.name = 'leftLeg';
     this.add(leftLeg);
     
-    const rightLeg = new Mesh(legGeometry, clothingMaterial);
+    const rightLeg = new THREE.Mesh(legGeometry, clothingMaterial);
     rightLeg.position.set(0.6, 0, 0);
     rightLeg.name = 'rightLeg';
     this.add(rightLeg);
     
     // Hands (climbing holds)
-    const handGeometry = new SphereGeometry(0.2, 6, 4);
+    const handGeometry = new THREE.SphereGeometry(0.2, 6, 4);
     
-    const leftHand = new Mesh(handGeometry, bodyMaterial);
+    const leftHand = new THREE.Mesh(handGeometry, bodyMaterial);
     leftHand.position.set(-2, 5.5, 0);
     leftHand.name = 'leftHand';
     this.add(leftHand);
     
-    const rightHand = new Mesh(handGeometry, bodyMaterial);
+    const rightHand = new THREE.Mesh(handGeometry, bodyMaterial);
     rightHand.position.set(2, 6, 0);
     rightHand.name = 'rightHand';
     this.add(rightHand);

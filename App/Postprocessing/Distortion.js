@@ -1,8 +1,26 @@
-import * as THREE from 'three';
+// 🔥 PREVENT THREE.JS DUPLICATION - Use window.THREE set by main app
+// Static import removed to prevent bundling Three.js twice (once by us, once by Spline)
+
+let THREE;
+
+// Initialize Three.js from global instance
+function initThree() {
+  if (!window.THREE) {
+    console.error('🚨 window.THREE not available - main app should set this before Distortion');
+    return false;
+  }
+  THREE = window.THREE;
+  return true;
+}
 
 // The distortion from the tutorial you showed me and then changed
 class DistortionTexture {
     constructor(options = {}) {
+        // Initialize Three.js
+        if (!initThree()) {
+            throw new Error('Three.js not available for DistortionTexture');
+        }
+        
         this.size = 64;
         this.radius = this.size * 0.02;
         this.width = this.height = this.size;

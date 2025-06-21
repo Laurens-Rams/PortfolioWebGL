@@ -1,7 +1,35 @@
+// 🔥 PREVENT THREE.JS DUPLICATION - Use window.THREE set by main app
+// Static imports removed to prevent bundling Three.js twice (once by us, once by Spline)
+
 import { addGLBToTile, addGLBToTileNoAnimation } from './handleGLBModels';
 import { CLIMBING_CONFIG } from '../ClimbingConfig';
 import { UltraLightCharacterPreview } from '../UltraLightCharacterPreview';
 import { performanceMonitor } from '../PerformanceMonitor';
+
+let THREE, GLTFLoader, DRACOLoader, MeshoptDecoder;
+
+// Initialize Three.js components from global instance
+async function initThreeComponents() {
+  if (!window.THREE) {
+    console.error('🚨 window.THREE not available - main app should set this before loading');
+    return false;
+  }
+  
+  THREE = window.THREE;
+  
+  // Load loaders dynamically
+  const [gltfModule, dracoModule, meshoptModule] = await Promise.all([
+    import('three/examples/jsm/loaders/GLTFLoader'),
+    import('three/examples/jsm/loaders/DRACOLoader'),
+    import('three/examples/jsm/libs/meshopt_decoder.module.js')
+  ]);
+  
+  GLTFLoader = gltfModule.GLTFLoader;
+  DRACOLoader = dracoModule.DRACOLoader;
+  MeshoptDecoder = meshoptModule.MeshoptDecoder;
+  
+  return true;
+}
 
 // --- DEBUG MODE FLAG ---
 // Set to false for production builds to disable detailed logs, debug UI, and FPS counter
@@ -22,17 +50,18 @@ const characterMaterialCache = new Map();
 
 // Optimized material creation with caching for the main character
 async function getOptimizedCharacterMaterial(color, roughness, metalness) {
+  if (!THREE) {
+    await initThreeComponents();
+  }
+  
   const key = `${color.isColor ? color.getHexString() : color}_${roughness}_${metalness}`; // Ensure color key is string
 
   if (!characterMaterialCache.has(key)) {
-    const threeModule = window.THREE || await import('three');
-    const { MeshStandardMaterial, FrontSide } = threeModule;
-    
-    const material = new MeshStandardMaterial({
+    const material = new THREE.MeshStandardMaterial({
       color: color,
       roughness: roughness,
       metalness: metalness,
-      side: FrontSide // Assuming all character parts are FrontSide
+      side: THREE.FrontSide // Assuming all character parts are FrontSide
     });
     characterMaterialCache.set(key, material);
     if (DEBUG_MODE) console.log(`🔥 Created cached character material: ${key}`);
@@ -41,12 +70,9 @@ async function getOptimizedCharacterMaterial(color, roughness, metalness) {
   return characterMaterialCache.get(key);
 }
 
-export default class Tiles {
+export default class Tiles extends THREE.Group {
   constructor(camera, scene, pointLight, app, lights = {}) {
-    // Initialize as a regular class, not extending Group
-    // We'll create the group dynamically when Three.js is available
-    this._group = null;
-    this._isThreeJSReady = false;
+    super();
 
     this._camera = camera;
     this._scene = scene;
@@ -55,53 +81,7 @@ export default class Tiles {
     this._lights = lights;
     
     this._initializeVariables();
-    
-    // Initialize async - don't wait for it to complete
-    this._init().catch(error => {
-      console.error('Failed to initialize Tiles:', error);
-    });
-  }
-
-  // Method to initialize Three.js Group when Three.js is available
-  async initThreeGroup() {
-    if (!this._group && (window.THREE || await this._loadThreeJS())) {
-      const threeModule = window.THREE || await import('three');
-      const { Group } = threeModule;
-      this._group = new Group();
-      this._isThreeJSReady = true;
-      
-      // Copy all Group methods to this instance
-      Object.getOwnPropertyNames(Group.prototype).forEach(name => {
-        if (name !== 'constructor' && typeof this._group[name] === 'function') {
-          this[name] = this._group[name].bind(this._group);
-        }
-      });
-      
-      // Copy all Group properties
-      Object.getOwnPropertyNames(this._group).forEach(name => {
-        if (!(name in this)) {
-          Object.defineProperty(this, name, {
-            get: () => this._group[name],
-            set: (value) => { this._group[name] = value; },
-            enumerable: true,
-            configurable: true
-          });
-        }
-      });
-    }
-    return this._group;
-  }
-
-  async _loadThreeJS() {
-    if (!this._isThreeJSReady) {
-      const threeModule = window.THREE || await import('three');
-      if (!window.THREE) {
-        window.THREE = threeModule;
-      }
-      this._isThreeJSReady = true;
-      return threeModule;
-    }
-    return window.THREE;
+    this._init();
   }
 
   _initializeVariables() {
@@ -250,10 +230,7 @@ export default class Tiles {
     this._previewCharacter = null;
   }
 
-  async _init() {
-    // Initialize Three.js Group first
-    await this.initThreeGroup();
-    
+  _init() {
     // 🔥 PROGRESSIVE LOADING: Create instant preview first
     this._createInstantPreview();
     
@@ -265,14 +242,8 @@ export default class Tiles {
     // Create hover effect div for production (always enabled)
     this._createHoverEffectDiv();
     
-    // Load the climbing character (in background) - now async
-    setTimeout(async () => {
-      try {
-        await this._loadClimber();
-      } catch (error) {
-        console.error('Failed to load climber:', error);
-      }
-    }, 100); // Small delay for instant preview
+    // Load the climbing character (in background)
+    setTimeout(async () => await this._loadClimber(), 100); // Small delay for instant preview
     
     // Initialize UI overlay system
 
@@ -362,22 +333,14 @@ export default class Tiles {
     // Mark start of full character loading
     performanceMonitor.markCharacterFullStart();
     
-    // Load Three.js modules dynamically
-    const threeModule = await this._loadThreeJS();
-    const { AnimationMixer } = threeModule;
+    // Initialize Three.js components
+    const success = await initThreeComponents();
+    if (!success) {
+      console.error('🚨 Could not initialize Three.js components for climber');
+      return;
+    }
     
-    // Import loaders dynamically
-    const [
-      { GLTFLoader },
-      { DRACOLoader },
-      { MeshoptDecoder }
-    ] = await Promise.all([
-      import('three/examples/jsm/loaders/GLTFLoader'),
-      import('three/examples/jsm/loaders/DRACOLoader'),
-      import('three/examples/jsm/libs/meshopt_decoder.module.js')
-    ]);
-    
-    // Create GLTF loader with DRACO and Meshopt support
+    // Create GLTF loader directly with DRACO and Meshopt support
     const dracoLoader = new DRACOLoader();
     dracoLoader.setDecoderPath('/draco/');
     const gltfLoader = new GLTFLoader();
@@ -409,7 +372,7 @@ export default class Tiles {
       this._climber.visible = true;
       
       // Set up animation mixer
-      this._mixer = new AnimationMixer(this._climber);
+      this._mixer = new THREE.AnimationMixer(this._climber);
       
       // Store all animations
       this._allAnimations = gltf.animations;
@@ -487,30 +450,30 @@ export default class Tiles {
       
       // Configure animations (only if they exist)
       if (this._idleAction) {
-        this._idleAction.setLoop(LoopRepeat, Infinity);
+        this._idleAction.setLoop(THREE.LoopRepeat, Infinity);
         this._idleAction.timeScale = 0.5; // Slower idle animation
       }
       
       if (this._climbingAction) {
-        this._climbingAction.setLoop(LoopRepeat, Infinity);
+        this._climbingAction.setLoop(THREE.LoopRepeat, Infinity);
         this._climbingAction.timeScale = 1.0;
         // Paused state for climbing will be handled in _transitionToState or _updateCurrentAnimation
       }
       
       if (this._standingAction) {
-        this._standingAction.setLoop(LoopOnce, 1);
+        this._standingAction.setLoop(THREE.LoopOnce, 1);
         this._standingAction.clampWhenFinished = true;
         this._standingAction.timeScale = 1.0;
       }
       
       if (this._turnAroundAction) {
-        this._turnAroundAction.setLoop(LoopOnce, 1);
+        this._turnAroundAction.setLoop(THREE.LoopOnce, 1);
         this._turnAroundAction.clampWhenFinished = true;
         this._turnAroundAction.timeScale = 1.0;
       }
       
       if (this._turnToWallAction) {
-        this._turnToWallAction.setLoop(LoopOnce, 1);
+        this._turnToWallAction.setLoop(THREE.LoopOnce, 1);
         this._turnToWallAction.clampWhenFinished = true;
         this._turnToWallAction.timeScale = 1.0;
       }
@@ -927,11 +890,7 @@ export default class Tiles {
   }
 
   // CLEANED UP: Simple linear camera movement from 0% to 100% scroll
-  async _moveCameraWithScroll(scrollOffset) {
-    // Load Three.js MathUtils dynamically
-    const threeModule = await this._loadThreeJS();
-    const { MathUtils } = threeModule;
-    
+  _moveCameraWithScroll(scrollOffset) {
     // Linear camera movement from start to end position
     const startY = CLIMBING_CONFIG.CAMERA_START_Y + 300; // -1700
     const endY = CLIMBING_CONFIG.CAMERA_END_Y + 300;     // 800
@@ -1008,10 +967,8 @@ export default class Tiles {
     // Animation handling is now done in the centralized controller in update() method
     // No need for phase handling here anymore
     
-    // Move camera based on scroll - now async
-    this._moveCameraWithScroll(scrollOffset).catch(error => {
-      console.error('Error moving camera with scroll:', error);
-    });
+    // Move camera based on scroll
+    this._moveCameraWithScroll(scrollOffset);
     
     // Update UI overlay based on scroll
 
@@ -1341,9 +1298,7 @@ export default class Tiles {
 
     // Apply hip position compensation for turn-around animation
     if (!shouldSkipFrame) {
-      this._applyHipCompensation().catch(error => {
-        console.error('Error applying hip compensation:', error);
-      });
+      this._applyHipCompensation();
     }
 
     // Update head tracking (only when not actively scrolling and not skipping frame)
@@ -1360,13 +1315,9 @@ export default class Tiles {
   }
 
   // NEW: Centralized hip compensation method
-  async _applyHipCompensation() {
+  _applyHipCompensation() {
     // Only apply hip compensation for turn around animation and only if we have cached data
     if (this._animationController.currentState === 'turnAround' && this._hipBone && this._standingEndHipPosition && this._standingEndCharacterPosition) {
-      // Load Three.js Vector3 dynamically
-      const threeModule = await this._loadThreeJS();
-      const { Vector3 } = threeModule;
-      
       // Calculate the difference between current hip world position and desired world position
       const currentHipWorldPosition = new Vector3();
       this._hipBone.getWorldPosition(currentHipWorldPosition);

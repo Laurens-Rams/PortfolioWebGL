@@ -1,8 +1,27 @@
-import * as THREE from 'three';
+// 🔥 PREVENT THREE.JS DUPLICATION - Use window.THREE set by main app
+// Static import removed to prevent bundling Three.js twice (once by us, once by Spline)
+
 import { Effect } from 'postprocessing';
+
+let THREE;
+
+// Initialize Three.js from global instance
+function initThree() {
+  if (!window.THREE) {
+    console.error('🚨 window.THREE not available - main app should set this before CharacterOutlineEffect');
+    return false;
+  }
+  THREE = window.THREE;
+  return true;
+}
 
 export class CharacterOutlineEffect extends Effect {
     constructor(scene, camera) {
+        // Initialize Three.js
+        if (!initThree()) {
+            throw new Error('Three.js not available for CharacterOutlineEffect');
+        }
+        
         super('CharacterOutlineEffect', fragmentShader, {
             uniforms: new Map([
                 ['uEnabled', new THREE.Uniform(1.0)],

@@ -445,9 +445,7 @@ export default class App {
       }
     });
 
-    this._initScene().catch(error => {
-      console.error('Failed to initialize scene:', error);
-    });
+    this._initScene();
 
     // Event Listeners
     this._initEvents();
@@ -651,19 +649,14 @@ export default class App {
     console.log('🔥 BEGINNING LIGHTING STATE UPDATED:', this._lightingStates.beginning);
   }
 
-  async _initScene() {
+  _initScene() {
     const tiles = new Tiles(this._camera, this._scene, this._mainLight, this, {
       frontLight: this._frontLight,
       keyLight: this._keyLight,
       fillLight: this._fillLight
     });
     this._tiles = tiles;
-    
-    // Wait for the Three.js Group to be initialized, then add to scene
-    const tilesGroup = await tiles.initThreeGroup();
-    if (tilesGroup) {
-      this._scene.add(tilesGroup);
-    }
+    this._scene.add(tiles);
 
     // 🔥 CONNECT POST-PROCESSING CONTROLS NOW THAT EVERYTHING IS READY
     console.log('🔥 ATTEMPTING TO CONNECT POST-PROCESSING - CONDITIONS:', {

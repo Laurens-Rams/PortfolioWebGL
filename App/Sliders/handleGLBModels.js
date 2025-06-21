@@ -1,28 +1,42 @@
-// Removed static Three.js imports to prevent duplication warnings
-// import { Box3, Vector3, AnimationMixer, FrontSide } from 'three';
-// import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
-// import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader';
+// 🔥 PREVENT THREE.JS DUPLICATION - Use window.THREE set by main app
+// Static imports removed to prevent bundling Three.js twice (once by us, once by Spline)
 
-// Dynamic loader initialization
+let THREE, GLTFLoader, DRACOLoader;
+
+// Initialize Three.js components from global instance
+async function initThreeComponents() {
+  if (!window.THREE) {
+    console.error('🚨 window.THREE not available - main app should set this before loading');
+    return false;
+  }
+  
+  THREE = window.THREE;
+  
+  // Load loaders dynamically
+  const [gltfModule, dracoModule] = await Promise.all([
+    import('three/examples/jsm/loaders/GLTFLoader'),
+    import('three/examples/jsm/loaders/DRACOLoader')
+  ]);
+  
+  GLTFLoader = gltfModule.GLTFLoader;
+  DRACOLoader = dracoModule.DRACOLoader;
+  
+  return true;
+}
+
+// Create GLTF loader after Three.js is available
 let loader = null;
-let isLoaderInitialized = false;
+let dracoLoader = null;
 
-// Initialize loaders dynamically
-async function initializeLoaders() {
-  if (!isLoaderInitialized) {
-    const [
-      { GLTFLoader },
-      { DRACOLoader }
-    ] = await Promise.all([
-      import('three/examples/jsm/loaders/GLTFLoader'),
-      import('three/examples/jsm/loaders/DRACOLoader')
-    ]);
+async function getLoader() {
+  if (!loader) {
+    const success = await initThreeComponents();
+    if (!success) return null;
     
-    const dracoLoader = new DRACOLoader();
+    dracoLoader = new DRACOLoader();
     dracoLoader.setDecoderPath('/draco/');
     loader = new GLTFLoader();
     loader.setDRACOLoader(dracoLoader);
-    isLoaderInitialized = true;
   }
   return loader;
 }
@@ -32,17 +46,18 @@ const materialCache = new Map();
 
 // Optimized material creation with caching
 async function getOptimizedMaterial(color, roughness, metalness) {
+  if (!THREE) {
+    await initThreeComponents();
+  }
+  
   const key = `${color}_${roughness}_${metalness}`;
   
   if (!materialCache.has(key)) {
-    const threeModule = window.THREE || await import('three');
-    const { MeshStandardMaterial, FrontSide } = threeModule;
-    
-    const material = new MeshStandardMaterial({
+    const material = new THREE.MeshStandardMaterial({
       color: color,
       roughness: roughness,
       metalness: metalness,
-      side: FrontSide
+      side: THREE.FrontSide
     });
     materialCache.set(key, material);
     console.log(`🔥 Created cached material: ${key}`);
@@ -53,18 +68,19 @@ async function getOptimizedMaterial(color, roughness, metalness) {
 
 // the 3D Avatar
 export async function addGLBToTile(tileGroup, glbPath, index, mixers, animationName, scaleFactor, visible = true) {
-  const loader = await initializeLoaders();
-  const threeModule = window.THREE || await import('three');
-  const { Box3, Vector3, AnimationMixer } = threeModule;
-  
-  loader.load(glbPath, async (gltf) => {
+  const gltfLoader = await getLoader();
+  if (!gltfLoader) {
+    console.error('🚨 Could not initialize GLTF loader');
+    return;
+  }
 
+  gltfLoader.load(glbPath, async (gltf) => {
     const model = gltf.scene;
     model.visible = visible;
     model.userData.isGLBModel = true;
 
-    const box = new Box3().setFromObject(model);
-    const size = new Vector3();
+    const box = new THREE.Box3().setFromObject(model);
+    const size = new THREE.Vector3();
     box.getSize(size);
     model.scale.set(scaleFactor, scaleFactor, scaleFactor);
     model.position.y -= 850;
@@ -92,7 +108,7 @@ export async function addGLBToTile(tileGroup, glbPath, index, mixers, animationN
     console.log(`🔥 GLB Model Optimized: ${meshCount} meshes using 1 shared material`);
 
     // animations
-    const mixer = new AnimationMixer(model);
+    const mixer = new THREE.AnimationMixer(model);
     const clip = gltf.animations.find(clip => clip.name === animationName);
     if (clip) {
       const action = mixer.clipAction(clip);
@@ -106,27 +122,28 @@ export async function addGLBToTile(tileGroup, glbPath, index, mixers, animationN
 
 // the landscape
 export async function addGLBToTileNoAnimation(tileGroup, glbPath, index, scaleFactor) {
-  const loader = await initializeLoaders();
-  const threeModule = window.THREE || await import('three');
-  const { Box3, Vector3 } = threeModule;
-  
-  loader.load(glbPath, async (gltf) => {
+  const gltfLoader = await getLoader();
+  if (!gltfLoader) {
+    console.error('🚨 Could not initialize GLTF loader');
+    return;
+  }
+
+  gltfLoader.load(glbPath, async (gltf) => {
     const model = gltf.scene;
 
-    const box = new Box3().setFromObject(model);
-    const size = new Vector3();
+    const box = new THREE.Box3().setFromObject(model);
+    const size = new THREE.Vector3();
     box.getSize(size);
     const newScaleFactor = scaleFactor * 4.0;
     model.scale.set(newScaleFactor, newScaleFactor, newScaleFactor);
     model.position.y -= 900;
 
-    // Use cached material for landscape
-    const landscapeMaterial = await getOptimizedMaterial(0x666666, 0.9, 0.05);
-
-    model.traverse((child) => {
+    model.traverse(async (child) => {
       if (child.isMesh) {
         child.userData.isSelectedForBloom = true;
         
+        // Use cached material for landscape
+        const landscapeMaterial = await getOptimizedMaterial(0x666666, 0.9, 0.05);
         child.material = landscapeMaterial;
         child.matrixAutoUpdate = false;
         
